@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Aldermere Academy</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,7 +27,7 @@
   color-scheme: dark;
 }
 [hidden] { display: none !important; }
-html { height: 100%; background: var(--night); font-variant-ligatures: none; font-feature-settings: "liga" 0, "clig" 0; }
+html { height: 100%; background: var(--night); font-variant-ligatures: none; font-feature-settings: "liga" 0, "clig" 0; touch-action: manipulation; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0; min-height: 100%; box-sizing: border-box;
   background: var(--night); color: var(--ink); font-family: var(--ui);
@@ -34,9 +35,10 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 16px;
   display: flex; flex-direction: column; align-items: center; gap: 12px;
+  -webkit-tap-highlight-color: transparent;
 }
 #stage {
-  position: relative; width: min(100%, 1280px, calc((100vh - 64px) * 16 / 9));
+  position: relative; width: min(100%, 1280px, calc((100vh - 64px) * 16 / 9)); width: min(100%, 1280px, calc((100dvh - 64px) * 16 / 9));
   aspect-ratio: 16 / 9; max-width: 100%;
   container-type: inline-size; background: #000;
   border: 1px solid var(--frame); border-radius: 4px; overflow: hidden;
@@ -95,7 +97,7 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
   display: grid; grid-template-columns: minmax(0, 30%) minmax(0, 1fr); gap: 1cqw;
   font-size: clamp(11px, 1.9cqw, 20px); line-height: 1.3;
 }
-#cmds { padding: .55em .5em .45em; overflow: auto; min-width: 0; }
+#cmds { padding: .55em .5em .45em; overflow: auto; min-width: 0; touch-action: pan-y; overscroll-behavior: contain; }
 #cmdtitle { color: var(--gold); font-family: var(--label); font-weight: 700; font-size: .78em; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .2em .3em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #party { padding: .5em .8em; display: flex; flex-direction: column; justify-content: center; gap: .45em; min-width: 0; }
 .prow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr) 20%; gap: .8em; align-items: center; font-variant-numeric: tabular-nums; }
@@ -141,11 +143,11 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 #nameform { position: relative; width: min(84%, 560px); padding: 2.4cqw 3cqw 2cqw; display: flex; flex-direction: column; gap: 1.2cqw; font-size: clamp(13px, 2.2cqw, 22px); }
 #nameform .tab { position: absolute; top: 0; left: 1.2em; transform: translateY(-58%); font-size: .75em; }
 #nameform label { line-height: 1.35; }
-#nameinput { font: inherit; background: #0a0d1f; color: #fff; border: 1px solid var(--frame); border-radius: 2px; padding: .3em .5em; }
+#nameinput { font: inherit; font-size: max(16px, 1em); background: #0a0d1f; color: #fff; border: 1px solid var(--frame); border-radius: 2px; padding: .3em .5em; }
 #nameinput:focus-visible, button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .act { align-self: flex-end; font: inherit; font-weight: 600; background: var(--gold); color: #1b1432; border: 0; border-radius: 2px; padding: .35em 1em; cursor: pointer; }
 
-#pause { inset: 4% 3% 3%; padding: 2cqw 2.2cqw; overflow: auto; font-size: clamp(11px, 1.8cqw, 18px); line-height: 1.35; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2cqw; align-items: start; }
+#pause { inset: 4% 3% 3%; padding: 2cqw 2.2cqw; overflow: auto; touch-action: pan-y; overscroll-behavior: contain; font-size: clamp(11px, 1.8cqw, 18px); line-height: 1.35; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2cqw; align-items: start; }
 #pause h3 { display: inline-block; margin: 0 0 .45em; font-size: .78em; }
 #pause section { margin-bottom: 1em; }
 #pause .pc { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0 1em; margin-bottom: .5em; font-variant-numeric: tabular-nums; }
@@ -161,10 +163,11 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 #card p { margin: 0; max-width: 52ch; font-size: clamp(12px, 2cqw, 20px); line-height: 1.45; }
 #cardmenu { padding: .45em .9em; font-size: clamp(12px, 2cqw, 20px); margin-top: 1cqw; }
 
-#pad { width: min(100%, 520px); display: flex; justify-content: space-between; align-items: center; gap: 16px; touch-action: none; user-select: none; -webkit-user-select: none; }
+#pad { width: min(100%, 520px); display: flex; justify-content: space-between; align-items: center; gap: 16px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 #pad button { font: 600 16px var(--ui); color: var(--ink); background: linear-gradient(180deg, #232a52, #11152b); border: 1px solid var(--frame); border-radius: 10px; touch-action: none; box-shadow: 0 0 0 1px #07080f; }
 #pad button:active, #pad button.down { background: #343d78; }
-.dpad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 4px; }
+.dpad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 4px; touch-action: none; }
+.dpad button { pointer-events: none; } /* the whole pad reads the thumb position, so sliding between directions works */
 .dpad [data-a="up"] { grid-area: 1 / 2; } .dpad [data-a="left"] { grid-area: 2 / 1; }
 .dpad [data-a="right"] { grid-area: 2 / 3; } .dpad [data-a="down"] { grid-area: 3 / 2; }
 .abtns { display: flex; align-items: center; gap: 10px; }
@@ -174,6 +177,34 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 #help { color: var(--dim); font-size: 13px; text-align: center; max-width: 70ch; line-height: 1.5; }
 #help kbd { font-family: var(--ui); color: var(--ink); border: 1px solid #3a3f66; border-radius: 3px; padding: 0 .35em; }
 @media (hover: hover) and (pointer: fine) { #pad { display: none; } }
+/* Phones held upright: dialogue, battle menus and overlays move into the space under the game screen, in larger text */
+@media (pointer: coarse) and (orientation: portrait) {
+  :root { --below: clamp(150px, 28dvh, 250px); }
+  #stage { overflow: visible; margin-bottom: calc(var(--below) + 6px); border-radius: 4px 4px 0 0; }
+  #dialog, #battle { top: calc(100% + 10px); bottom: auto; left: 0; right: 0; height: var(--below); max-height: none; }
+  #dialog { min-height: 0; font-size: 15px; padding: 16px 14px 14px; gap: 12px; overflow: auto; touch-action: pan-y; }
+  #dialog #portrait { width: 76px; }
+  #who { left: 12px; font-size: 12px; }
+  #more { right: 12px; bottom: 8px; }
+  #battle { font-size: 14px; grid-template-columns: minmax(0, 38%) minmax(0, 1fr); gap: 8px; }
+  .prow { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-areas: "n a" "h m"; gap: 4px 10px; }
+  .prow .pn { grid-area: n; } .prow .atb { grid-area: a; } .prow .hpst { grid-area: h; } .prow .mpst { grid-area: m; }
+  #pause, #card, #namebox { bottom: calc(-1 * var(--below) - 10px); }
+  #pause { font-size: 14px; inset-block-start: 0; left: 0; right: 0; }
+  #card p, #cardmenu { font-size: 15px; }
+  #nameform { font-size: 16px; }
+  #goal { font-size: 11px; max-width: 60%; }
+  #banner { font-size: 13px; }
+}
+/* Phones held sideways: the stage fills the height and the controls sit at either side of it */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+  body { padding-block: max(6px, env(safe-area-inset-top, 0px)) max(6px, env(safe-area-inset-bottom, 0px)); justify-content: center; min-height: 100dvh; }
+  #stage { width: min(calc(100vw - 330px), calc((100vh - 12px) * 16 / 9)); width: min(calc(100vw - 330px), calc((100dvh - 12px) * 16 / 9)); }
+  #pad { position: fixed; inset: 0; width: auto; display: block; pointer-events: none; }
+  .dpad { position: fixed; left: max(8px, env(safe-area-inset-left, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(3, 46px); pointer-events: auto; }
+  .abtns { position: fixed; right: max(8px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); width: 132px; flex-wrap: wrap; justify-content: flex-end; pointer-events: auto; }
+  .abtns [data-a="menu"] { order: -1; flex-basis: 100%; }
+}
 @media (hover: none), (pointer: coarse) { #help { display: none; } }
 @media (prefers-reduced-motion: reduce) { #more { animation: none; } #fade, #toast { transition: none; } }
 </style>
@@ -611,13 +642,33 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { const a = KEYMAP[e.code]; if (a && DIRS.includes(a)) { const i = dirStack.indexOf(a); if (i >= 0) dirStack.splice(i, 1); } });
 addEventListener('blur', () => { dirStack.length = 0; });
-document.querySelectorAll('#pad button').forEach(b => {
+// Touch d-pad: the whole pad reads where the thumb is, so rolling from one direction to the next turns without lifting.
+const dpad = document.querySelector('.dpad');
+let padDir = null;
+function setPadDir(d) {
+  if (d === padDir) return;
+  if (padDir) {
+    const i = dirStack.indexOf(padDir); if (i >= 0) dirStack.splice(i, 1);
+    dpad.querySelector(`[data-a="${padDir}"]`).classList.remove('down');
+  }
+  padDir = d;
+  if (d) { if (!dirStack.includes(d)) dirStack.push(d); dpad.querySelector(`[data-a="${d}"]`).classList.add('down'); emit(d); }
+}
+function padDirAt(e) {
+  const r = dpad.getBoundingClientRect();
+  const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+  if (Math.hypot(dx, dy) < r.width * .12) return padDir;
+  return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+}
+dpad.addEventListener('pointerdown', e => { e.preventDefault(); try { dpad.setPointerCapture(e.pointerId); } catch (err) { /* already released */ } setPadDir(padDirAt(e)); });
+dpad.addEventListener('pointermove', e => { if (padDir) setPadDir(padDirAt(e)); });
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => dpad.addEventListener(ev, () => setPadDir(null)));
+document.querySelectorAll('.abtns button').forEach(b => {
   const a = b.dataset.a;
-  const up = () => { b.classList.remove('down'); const i = dirStack.indexOf(a); if (i >= 0) dirStack.splice(i, 1); };
-  b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('down'); if (DIRS.includes(a) && !dirStack.includes(a)) dirStack.push(a); emit(a); });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, up));
-  b.addEventListener('contextmenu', e => e.preventDefault());
+  b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('down'); emit(a); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, () => b.classList.remove('down')));
 });
+document.querySelectorAll('#pad, #stage').forEach(el => el.addEventListener('contextmenu', e => e.preventDefault()));
 $('nameform').addEventListener('submit', e => e.preventDefault());
 let canvasPick = null;
 cv.addEventListener('pointerdown', e => {
@@ -1265,7 +1316,7 @@ function updateExplore(dt) {
     }
   }
   updateCamera();
-  if (frozen) return;
+  if (frozen || lock > 0) return; // lock may have been taken this frame by an exit
   grace -= dt;
   for (const f of FIELD) {
     if (f.moving) { f.prog += dt * 2.6; if (f.prog >= 1) { f.x = f.tx; f.y = f.ty; f.moving = false; f.prog = 0; } continue; }
@@ -1319,11 +1370,11 @@ function openPause() {
     const nr = nextRank(S.lv);
     const toNext = S.lv >= MAXLV ? 'Max level' : `${XP[S.lv + 1] - S.xp} XP to Lv ${S.lv + 1}`;
     const card = (nm, sub, hp, mhp, mp, mmp, extra) => `<div class="pc"><span class="nm">${esc(nm)}</span><span class="dim">${esc(sub)}</span><span>HP ${hp}/${mhp} &middot; MP ${mp}/${mmp}</span><span class="dim">${esc(extra)}</span></div>`;
-    let html = `<section><h3 class="tab">Party</h3>${card(S.name, `${S.house ? HOUSES[S.house].name : 'Unsorted'} · Lv ${S.lv}`, S.hp, st.maxhp, S.mp, st.maxmp, rankOf(S.lv))}`;
-    if (S.mira) { const ms = miraStats(miraLv()); html += card('Mira Fenwick', `Tidewyrm · Lv ${miraLv()}`, S.mira.hp, ms.maxhp, S.mira.mp, ms.maxmp, 'Scholar'); }
-    html += `<div class="dim">${esc(toNext)}${nr ? ` · next rank ${esc(nr[1])} at Lv ${nr[0]}` : ''}</div></section>`;
+    let html = `<section><h3 class="tab">Party</h3>${card(S.name, `${S.house ? HOUSES[S.house].name : 'Unsorted'} \u00b7 Lv ${S.lv}`, S.hp, st.maxhp, S.mp, st.maxmp, rankOf(S.lv))}`;
+    if (S.mira) { const ms = miraStats(miraLv()); html += card('Mira Fenwick', `Tidewyrm \u00b7 Lv ${miraLv()}`, S.mira.hp, ms.maxhp, S.mira.mp, ms.maxmp, 'Scholar'); }
+    html += `<div class="dim">${esc(toNext)}${nr ? ` \u00b7 next rank ${esc(nr[1])} at Lv ${nr[0]}` : ''}</div></section>`;
     const sp = heroSpells(S.lv, S.house);
-    html += `<section><h3 class="tab">Spells</h3>${sp.length ? `<div>${sp.map(k => esc(SPELLS[k].name)).join(' · ')}</div>` : '<div class="dim">None yet. Your spark is asleep.</div>'}</section>`;
+    html += `<section><h3 class="tab">Spells</h3>${sp.length ? `<div>${sp.map(k => esc(SPELLS[k].name)).join(' \u00b7 ')}</div>` : '<div class="dim">None yet. Your spark is asleep.</div>'}</section>`;
     html += `<section><h3 class="tab">Satchel</h3><div>Moonleaf Tonic x${S.items.tonic} <span class="dim">(heals 50, revives)</span><br>Ether Drop x${S.items.ether} <span class="dim">(restores 15 MP)</span></div></section>`;
     html += `<section><h3 class="tab">Recovered memories</h3>${S.memories.length ? `<ul>${S.memories.map(l => `<li>${esc(MEMORIES[l])}</li>`).join('')}</ul>` : '<div class="dim">Nothing yet. They return as your magic does.</div>'}</section>`;
     html += `<section><h3 class="tab">Goal</h3><div>${esc(S.goal)}</div></section>`;
@@ -1372,8 +1423,8 @@ function buildPartyPanel() {
   B.party.forEach(p => {
     const r = document.createElement('div'); r.className = 'prow';
     r.innerHTML = `<span class="pn">${esc(p.name)}</span>`
-      + `<span class="stat"><span><span class="lbl">HP</span><span class="hpv"></span></span><span class="bar hp"><i></i></span></span>`
-      + `<span class="stat"><span><span class="lbl">MP</span><span class="mpv"></span></span><span class="bar mp"><i></i></span></span>`
+      + `<span class="stat hpst"><span><span class="lbl">HP</span><span class="hpv"></span></span><span class="bar hp"><i></i></span></span>`
+      + `<span class="stat mpst"><span><span class="lbl">MP</span><span class="mpv"></span></span><span class="bar mp"><i></i></span></span>`
       + `<span class="atb"><i></i></span>`;
     el.appendChild(r);
     p.ui = { row: r, hp: r.querySelector('.hpv'), mp: r.querySelector('.mpv'), hpb: r.querySelector('.bar.hp i'), mpb: r.querySelector('.bar.mp i'), bar: r.querySelector('.atb i'), last: '' };
@@ -1775,14 +1826,17 @@ function askName() {
     setTimeout(() => inp.focus(), 60);
     const block = () => {};
     push(block);
+    const shownAt = performance.now();
     $('nameform').onsubmit = e => {
       e.preventDefault();
+      if (performance.now() - shownAt < 450) return; // ignore the tap that opened this box landing on the button
       const v = (inp.value || '').trim().replace(/\s+/g, ' ').slice(0, 12) || 'Rowan';
       pop(block); box.hidden = true; inp.blur(); res(v);
     };
   });
 }
 async function newGame() {
+  $('title').hidden = true; // the title menu sits above the name box and would swallow taps on it
   const name = await askName();
   S = newState(name);
   $('fade').classList.add('on');
