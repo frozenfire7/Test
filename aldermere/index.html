@@ -66,7 +66,29 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
   color: var(--ink); text-shadow: 1px 1px 0 rgba(0,0,0,.6);
 }
 /* When assets/ui_window.png is present it replaces the drawn frame (16px corners, 9-slice) */
-.skinned .win { background: none; border-style: solid; border-width: 8px; border-image: var(--win-skin) 16 / 8px fill stretch; box-shadow: 0 4px 14px rgba(0,0,0,.45); }
+.skinned .win { background: none; border-style: solid; border-width: 12px; border-image: var(--win-skin) 32 fill / 12px / 0 stretch; box-shadow: 0 4px 14px rgba(0,0,0,.45); }
+.skinned #dialog.memory { border-width: 1px; border-image: none; background: linear-gradient(180deg, var(--memory-top), var(--memory-bot)); }
+.skinned #goal { border-width: 8px; border-image-width: 8px; }
+/* Icons from assets/icons.png (6 x 4 grid); hidden until the sheet loads */
+.ic { display: none; width: 1.3em; height: 1.3em; margin-right: .45em; vertical-align: -.3em; flex: none; background: var(--icons) no-repeat; background-size: 600% 400%; image-rendering: pixelated; }
+.has-icons .ic { display: inline-block; }
+.opt > span:first-child { display: inline-flex; align-items: center; min-width: 0; }
+.crest { display: none; width: 1.6em; height: 1.6em; vertical-align: -.45em; margin-right: .35em; background: var(--crests) no-repeat; background-size: 400% 100%; image-rendering: pixelated; }
+.has-crests .crest { display: inline-block; }
+.pface { display: none; width: 1.9em; height: 1.9em; margin-right: .45em; vertical-align: middle; flex: none; border: 1px solid var(--frame); border-radius: 2px; background-color: #12162c; background-repeat: no-repeat; background-size: 400% 100%; image-rendering: pixelated; }
+.pface.on { display: inline-block; }
+.prow .pn { display: flex; align-items: center; }
+#title h1 img { display: block; width: min(64cqw, 820px); height: auto; image-rendering: pixelated; filter: drop-shadow(0 3px 0 rgba(0,0,0,.5)); }
+#title.has-logo .sub { display: none; }
+/* Touch buttons drawn from assets/btn_*.png once they load */
+.pad-skinned #pad .dpad { background: url("assets/btn_dpad.png") center / contain no-repeat; }
+.pad-skinned #pad .dpad button { background: transparent; border: 0; box-shadow: none; color: transparent; }
+.pad-skinned #pad .dpad button.down { background: rgba(255, 228, 160, .28); border-radius: 10px; }
+.pad-skinned #pad .abtns button { border: 0; box-shadow: none; color: transparent; background-color: transparent; background-position: center; background-size: contain; background-repeat: no-repeat; }
+.pad-skinned #pad .abtns [data-a="ok"] { background-image: url("assets/btn_a.png"); }
+.pad-skinned #pad .abtns [data-a="cancel"] { background-image: url("assets/btn_b.png"); }
+.pad-skinned #pad .abtns [data-a="menu"] { background-image: url("assets/btn_menu.png"); width: 92px; height: 44px; padding: 0; }
+.pad-skinned #pad .abtns button:active, .pad-skinned #pad .abtns button.down { filter: brightness(.78); transform: translateY(1px); }
 .tab {
   font-family: var(--label); font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   color: var(--gold); background: linear-gradient(180deg, #1c2244, #0f1327); border: 1px solid var(--frame);
@@ -94,9 +116,12 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 
 #battle {
   left: 1.5%; right: 1.5%; bottom: 2.5%; max-height: 40%;
-  display: grid; grid-template-columns: minmax(0, 30%) minmax(0, 1fr); gap: 1cqw;
+  display: grid; grid-template-columns: minmax(0, 30%) minmax(0, 1fr); grid-template-rows: minmax(0, auto); gap: 1cqw;
   font-size: clamp(11px, 1.9cqw, 20px); line-height: 1.3;
 }
+#battle > .win { min-height: 0; max-height: 100%; box-sizing: border-box; }
+#party { overflow: auto; }
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) { .skinned .win { border-width: 8px; border-image-width: 8px; } #battle { max-height: 46%; } .pface { width: 1.5em; height: 1.5em; } }
 #cmds { padding: .55em .5em .45em; overflow: auto; min-width: 0; touch-action: pan-y; overscroll-behavior: contain; }
 #cmdtitle { color: var(--gold); font-family: var(--label); font-weight: 700; font-size: .78em; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .2em .3em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #party { padding: .5em .8em; display: flex; flex-direction: column; justify-content: center; gap: .45em; min-width: 0; }
@@ -182,9 +207,9 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
   :root { --below: clamp(150px, 28dvh, 250px); }
   #stage { overflow: visible; margin-bottom: calc(var(--below) + 6px); border-radius: 4px 4px 0 0; }
   #dialog, #battle { top: calc(100% + 10px); bottom: auto; left: 0; right: 0; height: var(--below); max-height: none; }
-  #dialog { min-height: 0; font-size: 15px; padding: 16px 14px 14px; gap: 12px; overflow: auto; touch-action: pan-y; }
+  #dialog { min-height: 0; font-size: 15px; padding: 12px 14px 14px; gap: 10px 12px; overflow: auto; touch-action: pan-y; align-content: start; }
   #dialog #portrait { width: 76px; }
-  #who { left: 12px; font-size: 12px; }
+  #who { position: static; transform: none; grid-column: 1 / -1; justify-self: start; font-size: 12px; margin-bottom: -4px; }
   #more { right: 12px; bottom: 8px; }
   #battle { font-size: 14px; grid-template-columns: minmax(0, 38%) minmax(0, 1fr); gap: 8px; }
   .prow { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-areas: "n a" "h m"; gap: 4px 10px; }
@@ -430,7 +455,7 @@ const MAPS = {
     name: 'The Library',
     rows: [
       '##############gg##############',
-      '#BBBBBBBBBBBB....BBBBBBBBBBBB#',
+      '#BBBBBBBBBBBB.gg.BBBBBBBBBBBB#',
       '#............................#',
       '#.BBBBB.BBBBB....BBBBB.BBBBB.#',
       '#............................#',
@@ -449,8 +474,8 @@ const MAPS = {
     ],
     exits: [
       { x: 29, y: 8, to: 'courtyard', tx: 1, ty: 8 },
-      { x: 14, y: 0, to: 'archive', tx: 14, ty: 15, cond: () => S.flags.archiveOpen },
-      { x: 15, y: 0, to: 'archive', tx: 15, ty: 15, cond: () => S.flags.archiveOpen },
+      { x: 14, y: 1, to: 'archive', tx: 14, ty: 15, cond: () => S.flags.archiveOpen },
+      { x: 15, y: 1, to: 'archive', tx: 15, ty: 15, cond: () => S.flags.archiveOpen },
     ],
   },
   grounds: {
@@ -502,7 +527,7 @@ const MAPS = {
       'XxxxxxxxxxxxxxxxxxxxxxxxxxxxxX',
       'XXXXXXXXXXXXXXddXXXXXXXXXXXXXX',
     ],
-    exits: [{ x: 14, y: 16, to: 'library', tx: 14, ty: 1 }, { x: 15, y: 16, to: 'library', tx: 15, ty: 1 }],
+    exits: [{ x: 14, y: 16, to: 'library', tx: 14, ty: 2 }, { x: 15, y: 16, to: 'library', tx: 15, ty: 2 }],
     foes: () => ({
       spots: [[4, 8], [25, 10], [15, 8], [8, 12], [20, 14]],
       groups: [['gargoyle'], ['shade', 'wisp'], ['shade'], ['gargoyle', 'wisp']],
@@ -527,7 +552,11 @@ const heroLook = () => ({ robe: '#1f2a5a', trim: S && S.house ? HOUSES[S.house].
 // ---------------------------------------------------------------- art assets
 // Drop finished PNGs into assets/ and list their file names in AVAILABLE. Anything not listed is drawn by code.
 // Layouts are described in assets/README.md.
-const AVAILABLE = ['hero_field.png'];
+const AVAILABLE = [
+  'hero_field.png', 'mira_field.png', 'tiles.png', 'tile_fountain.png', 'ui_window.png', 'icons.png', 'crests.png',
+  'portrait_hero.png', 'portrait_mira.png', 'portrait_thorne.png', 'portrait_brannoch.png', 'portrait_quillon.png',
+  'title_bg.png', 'logo.png', 'btn_dpad.png', 'btn_a.png', 'btn_b.png', 'btn_menu.png',
+];
 const IMG = {};
 const HERO_TINTS = {};
 function loadAssets() {
@@ -544,11 +573,24 @@ function onAsset(f, im) {
     for (const k of ['tide', 'thorn', 'gale']) HERO_TINTS[k] = tintScarf(im, HOUSES[k].color);
     HERO_TINTS.none = tintScarf(im, '#8a8aa0');
   }
-  if (f === 'ui_window.png') {
-    document.documentElement.style.setProperty('--win-skin', `url("assets/${f}")`);
-    document.documentElement.classList.add('skinned');
-  }
+  const root = document.documentElement;
+  if (f === 'ui_window.png') { root.style.setProperty('--win-skin', `url("assets/${f}")`); root.classList.add('skinned'); }
+  if (f === 'icons.png') { root.style.setProperty('--icons', `url("assets/${f}")`); root.classList.add('has-icons'); }
+  if (f === 'crests.png') { root.style.setProperty('--crests', `url("assets/${f}")`); root.classList.add('has-crests'); }
+  if (f === 'logo.png') { const h = document.querySelector('#title h1'); h.innerHTML = '<img src="assets/logo.png" alt="Aldermere: The Unwritten Student">'; $('title').classList.add('has-logo'); }
+  if (/^btn_/.test(f) && ['btn_dpad.png', 'btn_a.png', 'btn_b.png', 'btn_menu.png'].every(n => IMG[n])) root.classList.add('pad-skinned');
 }
+// Icon positions in assets/icons.png (col, row)
+const ICONS = {
+  Attack: [0, 0], Magic: [1, 0], Tech: [2, 0], Item: [3, 0], Focus: [4, 0], Flee: [5, 0],
+  tonic: [0, 1], ether: [1, 1], key: [2, 1], scroll: [3, 1], heart: [4, 1], star: [5, 1],
+  fire: [0, 2], water: [1, 2], earth: [2, 2], air: [3, 2], arcane: [4, 2], light: [5, 2],
+  shadow: [0, 3], time: [1, 3], quill: [2, 3], crest: [3, 3], coin: [4, 3], candle: [5, 3],
+  Resume: [5, 1], 'Save game': [2, 3], 'Quit to title': [2, 1], 'Begin your first day': [2, 3], Continue: [3, 1],
+};
+const iconHTML = k => { const p = ICONS[k]; return p ? `<i class="ic" style="background-position:${p[0] * 20}% ${p[1] * 100 / 3}%"></i>` : ''; };
+const spellIcon = k => { const sp = SPELLS[k]; return sp.heal ? 'heart' : sp.haste ? 'time' : sp.elem; };
+const crestHTML = h => `<i class="crest" style="background-position:${HOUSE_ORDER.indexOf(h) * 100 / 3}% 0"></i>`;
 // The hero sheet draws the scarf red; each House gets a recoloured copy.
 function tintScarf(im, hex) {
   try {
@@ -687,7 +729,7 @@ function menu(el, items, { start = 0, noCancel = false } = {}) {
     const nodes = items.map((it, i) => {
       const d = document.createElement('div');
       d.className = 'opt' + (it.dis ? ' dis' : '');
-      d.innerHTML = `<span>${esc(it.label)}</span>` + (it.sub ? `<span class="sub">${esc(it.sub)}</span>` : '');
+      d.innerHTML = `<span>${iconHTML(it.icon || it.label)}${esc(it.label)}</span>` + (it.sub ? `<span class="sub">${esc(it.sub)}</span>` : '');
       d.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (it.dis) return; sel = i; draw(); done(i); });
       el.appendChild(d); return d;
     });
@@ -717,7 +759,7 @@ const SPEAKERS = {
   'Mira': 'mira', 'Pell': 'pell', 'Juniper': 'juniper', 'Tobias': 'tobias', 'Sir Pemberton': 'ghost',
   'The Hollow Warden': 'warden', 'Oracle Lantern': 'lantern',
 };
-const FACES = { neutral: 0, happy: 1, shocked: 2 };
+const FACES = { neutral: 0, happy: 1, shocked: 2, sad: 3 };
 const pctx = $('portrait').getContext('2d');
 function withCtx(c, fn) { const old = ctx; ctx = c; try { fn(); } finally { ctx = old; } }
 function drawPortrait(id, face) {
@@ -726,7 +768,8 @@ function drawPortrait(id, face) {
   const g = pc.createLinearGradient(0, 0, 0, N); g.addColorStop(0, snap('#2a3266')); g.addColorStop(1, snap('#12162c'));
   pc.fillStyle = g; pc.fillRect(0, 0, N, N);
   const art = IMG[`portrait_${id}.png`];
-  if (art) { const f = art.height; pc.drawImage(art, (FACES[face] || 0) * f, 0, f, f, 0, 0, N, N); return; }
+  if (art) { const f = art.height, n = Math.round(art.width / f); pc.drawImage(art, Math.min(n - 1, FACES[face] || 0) * f, 0, f, f, 0, 0, N, N); return; }
+  if (id === 'lantern' && S && S.house && IMG['crests.png']) { const cr = IMG['crests.png'], f = cr.height; pc.drawImage(cr, HOUSE_ORDER.indexOf(S.house) * f, 0, f, f, 8, 8, N - 16, N - 16); return; }
   const t = performance.now() / 1000;
   if (id === 'hero' && heroSheet()) { pc.drawImage(heroSheet(), 14, 2, 36, 36, 0, 0, N, N); return; }
   const sheet = npcSheet(id);
@@ -829,9 +872,15 @@ function drawTileFromSheet(c, X, Y, bigs) {
   const pos = TILE_LAYOUT[key];
   if (!pos) return false;
   const cell = im.width / 6, x = X * TS, y = Y * TS;
-  const base = OVERLAY_BASE[c];
+  const base = c === 'c' && MAPID === 'archive' ? 'x' : c === 'g' ? (MAPID === 'archive' ? 'x' : '.') : OVERLAY_BASE[c];
   if (base) { const bp = TILE_LAYOUT[base]; ctx.drawImage(im, bp[0] * cell, bp[1] * cell, cell, cell, x, y, TS, TS); }
-  if (c === 'f') { if (tileAt(X - 1, Y) !== 'f' && tileAt(X, Y - 1) !== 'f') bigs.push(() => ctx.drawImage(im, pos[0] * cell, pos[1] * cell, cell, cell, x, y, TS * 2, TS * 2)); return true; }
+  const topLeft = tileAt(X - 1, Y) !== c && tileAt(X, Y - 1) !== c;
+  if (c === 'f') {
+    const big = IMG['tile_fountain.png'];
+    if (topLeft) bigs.push(() => big ? ctx.drawImage(big, x, y, TS * 2, TS * 2) : ctx.drawImage(im, pos[0] * cell, pos[1] * cell, cell, cell, x, y, TS * 2, TS * 2));
+    return true;
+  }
+  if (c === 'g') { if (topLeft) bigs.push(() => ctx.drawImage(im, pos[0] * cell, pos[1] * cell, cell, cell, x, y, TS * 2, TS * 2)); return true; }
   ctx.drawImage(im, pos[0] * cell, pos[1] * cell, cell, cell, x, y, TS, TS);
   return true;
 }
@@ -1086,7 +1135,7 @@ async function talkThorne() {
     await say('Headmistress Thorne', 'Step up to the Oracle Lantern beside me. It will see which House you belong to.');
     await sortingCeremony();
     const h = HOUSES[S.house];
-    await say('Headmistress Thorne', `${h.name} it is. Now, a warning. When the Lantern looked into you, it found no spark. Your magic is asleep, or it is gone.`);
+    await say('Headmistress Thorne', `${h.name} it is. Now, a warning. When the Lantern looked into you, it found no spark. Your magic is asleep, or it is gone.`, { face: 'sad' });
     await say('Headmistress Thorne', 'Most first-years arrive with a little magic already. You will start from nothing. Every Archwizard in our history began as an Initiate. A few of them began lower.');
     await say('Headmistress Thorne', 'Report to Instructor Brannoch at the Training Grounds, east of the courtyard. If anything can wake a sleeping spark, it is a training dummy that hits back.');
     S.flags.sorted = true;
@@ -1130,7 +1179,7 @@ async function talkGhost() {
 async function talkBrannoch() {
   if (!S.flags.sorted) return say('Instructor Brannoch', 'No House colours, no training. Get yourself Sorted in the Great Hall, then come back.');
   if (!S.flags.trained) {
-    await say('Instructor Brannoch', 'So you are the one with no spark. Good. No bad habits to unlearn.');
+    await say('Instructor Brannoch', 'So you are the one with no spark. Good. No bad habits to unlearn.', { face: 'happy' });
     await say('Instructor Brannoch', 'That dummy is enchanted to hit back. Gently. Mostly. When your gauge fills, pick Attack and give it a whack with your wand.');
     await say('Instructor Brannoch', 'Focus draws magic back into you, once you have any to draw. Today you do not. Off you go.');
     const r = await fight(['dummy'], { noFlee: true });
@@ -1221,7 +1270,7 @@ async function talkWarden() {
 }
 
 async function finale() {
-  await say('Mira', 'You went quiet just now. Are you alright?');
+  await say('Mira', 'You went quiet just now. Are you alright?', { face: 'sad' });
   const c = await choose(S.name, '(What do you say?)', ['I remember everything.', 'I\'m just glad you\'re here.']);
   await say('Mira', c === 0 ? 'Then tell me. All of it. I have a bigger notebook now.' : 'That is a very strange thing to say to someone you met this term. ...I\'m glad you\'re here too.', { face: 'happy' });
   await showCard('Archwizard', `<p>${esc(S.name)} has risen from Unawakened to Archwizard of Aldermere, forty years early.</p><p>Somewhere above the school, a clocktower that is on no map starts running forwards again. This is where the prototype ends.</p>`, 'Keep wandering');
@@ -1370,14 +1419,14 @@ function openPause() {
     const nr = nextRank(S.lv);
     const toNext = S.lv >= MAXLV ? 'Max level' : `${XP[S.lv + 1] - S.xp} XP to Lv ${S.lv + 1}`;
     const card = (nm, sub, hp, mhp, mp, mmp, extra) => `<div class="pc"><span class="nm">${esc(nm)}</span><span class="dim">${esc(sub)}</span><span>HP ${hp}/${mhp} &middot; MP ${mp}/${mmp}</span><span class="dim">${esc(extra)}</span></div>`;
-    let html = `<section><h3 class="tab">Party</h3>${card(S.name, `${S.house ? HOUSES[S.house].name : 'Unsorted'} \u00b7 Lv ${S.lv}`, S.hp, st.maxhp, S.mp, st.maxmp, rankOf(S.lv))}`;
+    let html = `<section><h3 class="tab">${iconHTML('crest')}Party</h3>${S.house ? crestHTML(S.house) : ''}${card(S.name, `${S.house ? HOUSES[S.house].name : 'Unsorted'} \u00b7 Lv ${S.lv}`, S.hp, st.maxhp, S.mp, st.maxmp, rankOf(S.lv))}`;
     if (S.mira) { const ms = miraStats(miraLv()); html += card('Mira Fenwick', `Tidewyrm \u00b7 Lv ${miraLv()}`, S.mira.hp, ms.maxhp, S.mira.mp, ms.maxmp, 'Scholar'); }
     html += `<div class="dim">${esc(toNext)}${nr ? ` \u00b7 next rank ${esc(nr[1])} at Lv ${nr[0]}` : ''}</div></section>`;
     const sp = heroSpells(S.lv, S.house);
-    html += `<section><h3 class="tab">Spells</h3>${sp.length ? `<div>${sp.map(k => esc(SPELLS[k].name)).join(' \u00b7 ')}</div>` : '<div class="dim">None yet. Your spark is asleep.</div>'}</section>`;
-    html += `<section><h3 class="tab">Satchel</h3><div>Moonleaf Tonic x${S.items.tonic} <span class="dim">(heals 50, revives)</span><br>Ether Drop x${S.items.ether} <span class="dim">(restores 15 MP)</span></div></section>`;
-    html += `<section><h3 class="tab">Recovered memories</h3>${S.memories.length ? `<ul>${S.memories.map(l => `<li>${esc(MEMORIES[l])}</li>`).join('')}</ul>` : '<div class="dim">Nothing yet. They return as your magic does.</div>'}</section>`;
-    html += `<section><h3 class="tab">Goal</h3><div>${esc(S.goal)}</div></section>`;
+    html += `<section><h3 class="tab">${iconHTML('Magic')}Spells</h3>${sp.length ? `<div>${sp.map(k => iconHTML(spellIcon(k)) + esc(SPELLS[k].name)).join(' \u00b7 ')}</div>` : '<div class="dim">None yet. Your spark is asleep.</div>'}</section>`;
+    html += `<section><h3 class="tab">${iconHTML('Item')}Satchel</h3><div>${iconHTML('tonic')}Moonleaf Tonic x${S.items.tonic} <span class="dim">(heals 50, revives)</span><br>${iconHTML('ether')}Ether Drop x${S.items.ether} <span class="dim">(restores 15 MP)</span></div></section>`;
+    html += `<section><h3 class="tab">${iconHTML('candle')}Recovered memories</h3>${S.memories.length ? `<ul>${S.memories.map(l => `<li>${esc(MEMORIES[l])}</li>`).join('')}</ul>` : '<div class="dim">Nothing yet. They return as your magic does.</div>'}</section>`;
+    html += `<section><h3 class="tab">${iconHTML('star')}Goal</h3><div>${esc(S.goal)}</div></section>`;
     $('pausebody').innerHTML = html;
     $('pause').hidden = false;
     while (true) {
@@ -1422,12 +1471,14 @@ function buildPartyPanel() {
   const el = $('party'); el.innerHTML = '';
   B.party.forEach(p => {
     const r = document.createElement('div'); r.className = 'prow';
-    r.innerHTML = `<span class="pn">${esc(p.name)}</span>`
+    r.innerHTML = `<span class="pn"><i class="pface"></i>${esc(p.name)}</span>`
       + `<span class="stat hpst"><span><span class="lbl">HP</span><span class="hpv"></span></span><span class="bar hp"><i></i></span></span>`
       + `<span class="stat mpst"><span><span class="lbl">MP</span><span class="mpv"></span></span><span class="bar mp"><i></i></span></span>`
       + `<span class="atb"><i></i></span>`;
     el.appendChild(r);
-    p.ui = { row: r, hp: r.querySelector('.hpv'), mp: r.querySelector('.mpv'), hpb: r.querySelector('.bar.hp i'), mpb: r.querySelector('.bar.mp i'), bar: r.querySelector('.atb i'), last: '' };
+    const face = r.querySelector('.pface'), art = `portrait_${p.id}.png`;
+    if (IMG[art]) { face.style.backgroundImage = `url("assets/${art}")`; face.classList.add('on'); }
+    p.ui = { face, row: r, hp: r.querySelector('.hpv'), mp: r.querySelector('.mpv'), hpb: r.querySelector('.bar.hp i'), mpb: r.querySelector('.bar.mp i'), bar: r.querySelector('.atb i'), last: '' };
   });
 }
 function updatePartyPanel() {
@@ -1439,6 +1490,7 @@ function updatePartyPanel() {
     p.ui.hpb.style.width = `${100 * p.hp / p.maxhp}%`; p.ui.mpb.style.width = `${p.maxmp ? 100 * p.mp / p.maxmp : 0}%`;
     p.ui.bar.style.width = `${p.atb}%`;
     p.ui.row.classList.toggle('ko', p.hp <= 0);
+    p.ui.face.style.backgroundPosition = p.hp <= 0 ? '66.667% 0' : p.hp < p.maxhp * .35 ? '100% 0' : '0 0';
     p.ui.row.classList.toggle('ready', p.hp > 0 && p.atb >= 100);
     p.ui.row.classList.toggle('active', B.actor === p);
   }
@@ -1513,7 +1565,7 @@ async function commandFlow(a) {
     if (c === 'Attack') { const t = await pickTarget(aliveFoes()); if (!t) continue; await doAttack(a, t); }
     else if (c === 'Magic') {
       $('cmdtitle').textContent = `${a.name}: Magic`;
-      const list = a.spells.map(k => ({ label: SPELLS[k].name, sub: `${SPELLS[k].mp}`, dis: a.mp < SPELLS[k].mp || (SPELLS[k].tgt === 'other' && !aliveParty().some(p => p !== a)) }));
+      const list = a.spells.map(k => ({ label: SPELLS[k].name, icon: spellIcon(k), sub: `${SPELLS[k].mp}`, dis: a.mp < SPELLS[k].mp || (SPELLS[k].tgt === 'other' && !aliveParty().some(p => p !== a)) }));
       const j = await menu($('cmdlist'), list);
       if (j < 0) continue;
       const sp = SPELLS[a.spells[j]];
@@ -1526,7 +1578,7 @@ async function commandFlow(a) {
     else if (c === 'Tech') { await doTech(); return; }
     else if (c === 'Item') {
       $('cmdtitle').textContent = 'Satchel';
-      const list = [{ k: 'tonic', label: 'Moonleaf Tonic', sub: `x${S.items.tonic}`, dis: !S.items.tonic }, { k: 'ether', label: 'Ether Drop', sub: `x${S.items.ether}`, dis: !S.items.ether }];
+      const list = [{ k: 'tonic', icon: 'tonic', label: 'Moonleaf Tonic', sub: `x${S.items.tonic}`, dis: !S.items.tonic }, { k: 'ether', icon: 'ether', label: 'Ether Drop', sub: `x${S.items.ether}`, dis: !S.items.ether }];
       const j = await menu($('cmdlist'), list);
       if (j < 0) continue;
       const tg = await pickTarget(list[j].k === 'tonic' ? B.party : aliveParty());
@@ -1692,6 +1744,13 @@ async function defeat() {
 // ---------------------------------------------------------------- render
 const STARS = Array.from({ length: 120 }, () => [Math.random() * W, Math.random() * 180, Math.random()]);
 function drawTitle(t) {
+  const bg = IMG['title_bg.png'];
+  if (bg) {
+    ctx.drawImage(bg, 0, 0, W, H);
+    STARS.slice(0, 24).forEach(([x, y, b]) => { const a = Math.max(0, Math.sin(t * (.6 + b) + x * 7)); if (a < .7) return; ctx.globalAlpha = (a - .7) * 3; px(x | 0, (y * .45) | 0, 1, 1, '#f2e6c9'); px((x | 0) - 1, (y * .45) | 0, 3, 1, '#f2e6c9'); px(x | 0, ((y * .45) | 0) - 1, 1, 3, '#f2e6c9'); });
+    ctx.globalAlpha = 1;
+    return;
+  }
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, snap('#0b0d18')); g.addColorStop(.6, snap('#1b1f33')); g.addColorStop(1, snap('#3a2f6a'));
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   STARS.forEach(([x, y, b]) => { ctx.globalAlpha = (.3 + .7 * Math.abs(Math.sin(t * (.4 + b) + x))) * .85; px(x | 0, y | 0, 1, 1, '#f2e6c9'); });
@@ -1850,7 +1909,7 @@ async function newGame() {
   await fadeIn();
   toast(MAP.name);
   await sleep(900);
-  await say(name, '...Where am I?', { face: 'shocked' });
+  await say(name, '...Where am I?', { face: 'neutral' });
   await say('Prefect Aldous', 'You! Yes, you, lying on the flagstones. Up you get. Orientation started ten minutes ago. Great Hall, north doors. Go!');
   lock--;
   save();
