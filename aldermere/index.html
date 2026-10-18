@@ -1,4 +1,9 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0d18">
 <title>Aldermere Academy</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,6 +50,8 @@ body {
   box-shadow: 0 0 0 3px #07080f, 0 0 0 4px #2a2442;
   user-select: none; -webkit-user-select: none; touch-action: none;
 }
+/* iOS 14 and older Safari: no aspect-ratio, so hold the 16:9 shape with padding */
+@supports not (aspect-ratio: 16 / 9) { #stage::before { content: ''; display: block; padding-top: 56.25%; } #stage canvas#cv { position: absolute; top: 0; left: 0; } }
 canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
 .ov { position: absolute; }
 
@@ -78,7 +85,10 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 .pface { display: none; width: 1.9em; height: 1.9em; margin-right: .45em; vertical-align: middle; flex: none; border: 1px solid var(--frame); border-radius: 2px; background-color: #12162c; background-repeat: no-repeat; background-size: 400% 100%; image-rendering: pixelated; }
 .pface.on { display: inline-block; }
 .prow .pn { display: flex; align-items: center; }
-#title h1 img { display: block; width: min(64cqw, 820px); height: auto; image-rendering: pixelated; filter: drop-shadow(0 3px 0 rgba(0,0,0,.5)); }
+#say { white-space: pre-line; }
+.ii { display: inline-block; width: 1.3em; height: 1.3em; margin-right: .45em; vertical-align: -.3em; flex: none; background: url("assets/pack/items24.png") no-repeat; background-size: 800% 800%; image-rendering: pixelated; }
+#stage, #stage img { -webkit-touch-callout: none; -webkit-user-drag: none; }
+#title h1 img { pointer-events: none; display: block; width: min(64vw, 820px); width: min(64cqw, 820px); height: auto; image-rendering: pixelated; filter: drop-shadow(0 3px 0 rgba(0,0,0,.5)); }
 #title.has-logo .sub { display: none; }
 /* Touch buttons drawn from assets/btn_*.png once they load */
 .pad-skinned #pad .dpad { background: url("assets/btn_dpad.png") center / contain no-repeat; }
@@ -87,7 +97,7 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 .pad-skinned #pad .abtns button { border: 0; box-shadow: none; color: transparent; background-color: transparent; background-position: center; background-size: contain; background-repeat: no-repeat; }
 .pad-skinned #pad .abtns [data-a="ok"] { background-image: url("assets/btn_a.png"); }
 .pad-skinned #pad .abtns [data-a="cancel"] { background-image: url("assets/btn_b.png"); }
-.pad-skinned #pad .abtns [data-a="menu"] { background-image: url("assets/btn_menu.png"); width: 92px; height: 44px; padding: 0; }
+.pad-skinned #pad .abtns [data-a="menu"] { background-image: url("assets/btn_menu.png"); width: min(92px, 18vw); height: auto; aspect-ratio: 92 / 44; padding: 0; }
 .pad-skinned #pad .abtns button:active, .pad-skinned #pad .abtns button.down { filter: brightness(.78); transform: translateY(1px); }
 .tab {
   font-family: var(--label); font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
@@ -103,25 +113,25 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 #fade { inset: 0; background: #000; opacity: 0; transition: opacity .4s; pointer-events: none; }
 #fade.on { opacity: 1; }
 
-#goal { top: 3%; left: 2%; max-width: 46%; padding: .45em .8em .45em; font-size: clamp(10px, 1.6cqw, 16px); line-height: 1.3; --win-top: rgba(28,34,70,.9); --win-bot: rgba(14,17,38,.9); }
+#goal { top: 3%; left: 2%; max-width: 46%; padding: .45em .8em .45em; font-size: clamp(10px, 1.6vw, 16px); font-size: clamp(10px, 1.6cqw, 16px); line-height: 1.3; --win-top: rgba(28,34,70,.9); --win-bot: rgba(14,17,38,.9); }
 #goal .tab { position: absolute; top: 0; left: .7em; transform: translateY(-60%); font-size: .8em; }
 #goal .g { display: block; margin-top: .25em; }
 #toast {
   top: 15%; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
-  font-family: var(--display); font-size: clamp(15px, 3.4cqw, 40px); color: var(--gold);
+  font-family: var(--display); font-size: clamp(15px, 3.4vw, 40px); font-size: clamp(15px, 3.4cqw, 40px); color: var(--gold);
   text-shadow: 0 2px 0 #000, 0 0 14px rgba(0,0,0,.85); opacity: 0; transition: opacity .6s;
 }
 #toast.on { opacity: 1; }
-#banner { top: 4%; left: 50%; transform: translateX(-50%); padding: .25em 1.3em; font-family: var(--label); font-weight: 700; letter-spacing: .06em; font-size: clamp(12px, 2.2cqw, 24px); white-space: nowrap; }
+#banner { top: 4%; left: 50%; transform: translateX(-50%); padding: .25em 1.3em; font-family: var(--label); font-weight: 700; letter-spacing: .06em; font-size: clamp(12px, 2.2vw, 24px); font-size: clamp(12px, 2.2cqw, 24px); white-space: nowrap; }
 
 #battle {
   left: 1.5%; right: 1.5%; bottom: 2.5%; max-height: 40%;
-  display: grid; grid-template-columns: minmax(0, 30%) minmax(0, 1fr); grid-template-rows: minmax(0, auto); gap: 1cqw;
-  font-size: clamp(11px, 1.9cqw, 20px); line-height: 1.3;
+  display: grid; grid-template-columns: minmax(0, 30%) minmax(0, 1fr); grid-template-rows: minmax(0, auto); gap: 1vw; gap: 1cqw;
+  font-size: clamp(11px, 1.9vw, 20px); font-size: clamp(11px, 1.9cqw, 20px); line-height: 1.3;
 }
 #battle > .win { min-height: 0; max-height: 100%; box-sizing: border-box; }
 #party { overflow: auto; }
-@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) { .skinned .win { border-width: 8px; border-image-width: 8px; } #battle { max-height: 46%; } .pface { width: 1.5em; height: 1.5em; } }
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) { .skinned .win { border-width: 8px; border-image-width: 8px; } #battle { height: 48%; max-height: none; font-size: 11px; line-height: 1.2; grid-template-rows: 100%; } #battle > .win { height: 100%; } #cmds .opt { padding-block: 0; } .pface { width: 1.5em; height: 1.5em; } }
 #cmds { padding: .55em .5em .45em; overflow: auto; min-width: 0; touch-action: pan-y; overscroll-behavior: contain; }
 #cmdtitle { color: var(--gold); font-family: var(--label); font-weight: 700; font-size: .78em; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .2em .3em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #party { padding: .5em .8em; display: flex; flex-direction: column; justify-content: center; gap: .45em; min-width: 0; }
@@ -140,39 +150,39 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 
 #dialog {
   left: 2%; right: 2%; bottom: 3.5%; min-height: 25%; box-sizing: border-box;
-  padding: 2.2cqw 2.6cqw 2cqw; font-size: clamp(12px, 2.2cqw, 25px); line-height: 1.4; cursor: pointer;
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2.2cqw; align-items: start;
+  padding: 2.2vw 2.6vw 2vw; padding: 2.2cqw 2.6cqw 2cqw; font-size: clamp(12px, 2.2vw, 25px); font-size: clamp(12px, 2.2cqw, 25px); line-height: 1.4; cursor: pointer;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2.2vw; gap: 2.2cqw; align-items: start;
 }
 #dialog.noportrait { grid-template-columns: minmax(0, 1fr); }
 #dialog.noportrait #portrait { display: none; }
 #dialog.memory { --win-top: var(--memory-top); --win-bot: var(--memory-bot); --c: #c07ad8; font-style: italic; }
 #dialog.memory #who { color: #e4cdfa; }
-#who { position: absolute; top: 0; left: 2.4cqw; transform: translateY(-58%); font-size: .8em; font-style: normal; }
-#portrait { width: clamp(52px, 13cqw, 160px); aspect-ratio: 1; height: auto; border: 1px solid var(--frame); box-shadow: 0 0 0 1px #07080f, inset 0 0 0 1px rgba(226,178,90,.3); background: #12162c; image-rendering: pixelated; }
+#who { position: absolute; top: 0; left: 2.4vw; left: 2.4cqw; transform: translateY(-58%); font-size: .8em; font-style: normal; }
+#portrait { width: clamp(52px, 13vw, 160px); width: clamp(52px, 13cqw, 160px); aspect-ratio: 1; height: auto; border: 1px solid var(--frame); box-shadow: 0 0 0 1px #07080f, inset 0 0 0 1px rgba(226,178,90,.3); background: #12162c; image-rendering: pixelated; }
 .dtext { min-width: 0; }
 #say { max-width: 68ch; }
 #choices { margin-top: .4em; }
-#more { position: absolute; right: 1.6cqw; bottom: .9cqw; color: var(--gold); animation: bob .8s ease-in-out infinite; }
+#more { position: absolute; right: 1.6vw; right: 1.6cqw; bottom: .9vw; bottom: .9cqw; color: var(--gold); animation: bob .8s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(3px); } }
 
-#title { inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 6cqw; gap: 1cqw; text-align: center; }
+#title { inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 6vw; padding-top: 6cqw; gap: 1vw; gap: 1cqw; text-align: center; }
 #title h1 {
-  margin: 0; font-family: var(--display); font-size: clamp(30px, 8cqw, 104px); line-height: 1; color: var(--gold);
+  margin: 0; font-family: var(--display); font-size: clamp(30px, 8vw, 104px); font-size: clamp(30px, 8cqw, 104px); line-height: 1; color: var(--gold);
   letter-spacing: .03em; text-wrap: balance; text-shadow: 0 3px 0 #2e2108, 0 0 24px rgba(226,178,90,.35);
 }
-#title .sub { font-family: var(--label); font-weight: 600; font-size: clamp(11px, 2cqw, 24px); letter-spacing: .4em; text-transform: uppercase; color: var(--ink); }
-#title .pillars { font-size: clamp(9px, 1.3cqw, 15px); letter-spacing: .3em; text-transform: uppercase; color: var(--dim); }
-#titlebox { margin-top: 1.6cqw; padding: .7em 1em; min-width: 30cqw; font-size: clamp(12px, 2.1cqw, 22px); text-align: left; }
+#title .sub { font-family: var(--label); font-weight: 600; font-size: clamp(11px, 2vw, 24px); font-size: clamp(11px, 2cqw, 24px); letter-spacing: .4em; text-transform: uppercase; color: var(--ink); }
+#title .pillars { font-size: clamp(9px, 1.3vw, 15px); font-size: clamp(9px, 1.3cqw, 15px); letter-spacing: .3em; text-transform: uppercase; color: var(--dim); }
+#titlebox { margin-top: 1.6vw; margin-top: 1.6cqw; padding: .7em 1em; min-width: 30vw; min-width: 30cqw; font-size: clamp(12px, 2.1vw, 22px); font-size: clamp(12px, 2.1cqw, 22px); text-align: left; }
 
 #namebox { inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(4,5,18,.55); }
-#nameform { position: relative; width: min(84%, 560px); padding: 2.4cqw 3cqw 2cqw; display: flex; flex-direction: column; gap: 1.2cqw; font-size: clamp(13px, 2.2cqw, 22px); }
+#nameform { position: relative; width: min(84%, 560px); padding: 2.4vw 3vw 2vw; padding: 2.4cqw 3cqw 2cqw; display: flex; flex-direction: column; gap: 1.2vw; gap: 1.2cqw; font-size: clamp(13px, 2.2vw, 22px); font-size: clamp(13px, 2.2cqw, 22px); }
 #nameform .tab { position: absolute; top: 0; left: 1.2em; transform: translateY(-58%); font-size: .75em; }
 #nameform label { line-height: 1.35; }
 #nameinput { font: inherit; font-size: max(16px, 1em); background: #0a0d1f; color: #fff; border: 1px solid var(--frame); border-radius: 2px; padding: .3em .5em; }
 #nameinput:focus-visible, button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .act { align-self: flex-end; font: inherit; font-weight: 600; background: var(--gold); color: #1b1432; border: 0; border-radius: 2px; padding: .35em 1em; cursor: pointer; }
 
-#pause { inset: 4% 3% 3%; padding: 2cqw 2.2cqw; overflow: auto; touch-action: pan-y; overscroll-behavior: contain; font-size: clamp(11px, 1.8cqw, 18px); line-height: 1.35; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2cqw; align-items: start; }
+#pause { inset: 4% 3% 3%; padding: 2vw 2.2vw; padding: 2cqw 2.2cqw; overflow: auto; touch-action: pan-y; overscroll-behavior: contain; font-size: clamp(11px, 1.8vw, 18px); font-size: clamp(11px, 1.8cqw, 18px); line-height: 1.35; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2vw; gap: 2cqw; align-items: start; }
 #pause h3 { display: inline-block; margin: 0 0 .45em; font-size: .78em; }
 #pause section { margin-bottom: 1em; }
 #pause .pc { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0 1em; margin-bottom: .5em; font-variant-numeric: tabular-nums; }
@@ -183,20 +193,20 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 #pausemenu { min-width: 9em; position: sticky; top: 0; }
 @container (max-width: 540px) { #pause { grid-template-columns: 1fr; } #pausemenu { position: static; order: -1; } }
 
-#card { inset: 0; background: rgba(4,4,14,.9); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2cqw; text-align: center; padding: 4cqw; }
-#card h2 { margin: 0; font-family: var(--display); color: var(--gold); font-size: clamp(22px, 5.4cqw, 64px); text-wrap: balance; }
-#card p { margin: 0; max-width: 52ch; font-size: clamp(12px, 2cqw, 20px); line-height: 1.45; }
-#cardmenu { padding: .45em .9em; font-size: clamp(12px, 2cqw, 20px); margin-top: 1cqw; }
+#card { inset: 0; background: rgba(4,4,14,.9); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2vw; gap: 1.2cqw; text-align: center; padding: 4vw; padding: 4cqw; }
+#card h2 { margin: 0; font-family: var(--display); color: var(--gold); font-size: clamp(22px, 5.4vw, 64px); font-size: clamp(22px, 5.4cqw, 64px); text-wrap: balance; }
+#card p { margin: 0; max-width: 52ch; font-size: clamp(12px, 2vw, 20px); font-size: clamp(12px, 2cqw, 20px); line-height: 1.45; }
+#cardmenu { padding: .45em .9em; font-size: clamp(12px, 2vw, 20px); font-size: clamp(12px, 2cqw, 20px); margin-top: 1vw; margin-top: 1cqw; }
 
-#pad { width: min(100%, 520px); display: flex; justify-content: space-between; align-items: center; gap: 16px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#pad { width: min(100%, 520px); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 #pad button { font: 600 16px var(--ui); color: var(--ink); background: linear-gradient(180deg, #232a52, #11152b); border: 1px solid var(--frame); border-radius: 10px; touch-action: none; box-shadow: 0 0 0 1px #07080f; }
 #pad button:active, #pad button.down { background: #343d78; }
-.dpad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 4px; touch-action: none; }
+.dpad { display: grid; grid-template-columns: repeat(3, min(52px, 12vw)); grid-template-rows: repeat(3, min(52px, 12vw)); gap: 4px; touch-action: none; }
 .dpad button { pointer-events: none; } /* the whole pad reads the thumb position, so sliding between directions works */
 .dpad [data-a="up"] { grid-area: 1 / 2; } .dpad [data-a="left"] { grid-area: 2 / 1; }
 .dpad [data-a="right"] { grid-area: 2 / 3; } .dpad [data-a="down"] { grid-area: 3 / 2; }
-.abtns { display: flex; align-items: center; gap: 10px; }
-.abtns [data-a="ok"], .abtns [data-a="cancel"] { width: 60px; height: 60px; border-radius: 50%; }
+.abtns { display: flex; align-items: center; gap: 8px; }
+.abtns [data-a="ok"], .abtns [data-a="cancel"] { width: min(60px, 13vw); height: min(60px, 13vw); border-radius: 50%; }
 .abtns [data-a="ok"] { background: linear-gradient(180deg, #c99a3e, #7a5414); color: #1b1432; }
 .abtns [data-a="menu"] { padding: 8px 12px; font-size: 13px; }
 #help { color: var(--dim); font-size: 13px; text-align: center; max-width: 70ch; line-height: 1.5; }
@@ -214,7 +224,9 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
   #battle { font-size: 14px; grid-template-columns: minmax(0, 38%) minmax(0, 1fr); gap: 8px; }
   .prow { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-areas: "n a" "h m"; gap: 4px 10px; }
   .prow .pn { grid-area: n; } .prow .atb { grid-area: a; } .prow .hpst { grid-area: h; } .prow .mpst { grid-area: m; }
-  #pause, #card, #namebox { bottom: calc(-1 * var(--below) - 10px); }
+  #pause, #card, #namebox, #title { bottom: calc(-1 * var(--below) - 10px); }
+  #titlebox { margin-top: auto; margin-bottom: calc(var(--below) * .3); font-size: 16px; }
+  #pad { justify-content: space-around; }
   #pause { font-size: 14px; inset-block-start: 0; left: 0; right: 0; }
   #card p, #cardmenu { font-size: 15px; }
   #nameform { font-size: 16px; }
@@ -387,10 +399,19 @@ const FOES = {
   inkimp:   { name: 'Inkimp', hp: 30, atk: 8, mag: 5, def: 2, spd: 11, xp: 20, weak: ['water', 'fire'], art: 'imp', acts: ['hit', 'hit', 'spell'], elem: 'shadow', spellName: 'Ink Splat' },
   broom:    { name: 'Unruly Broom', hp: 42, atk: 10, mag: 0, def: 3, spd: 14, xp: 26, weak: ['fire'], art: 'broom', acts: ['hit'] },
   wisp:     { name: 'Gloom Wisp', hp: 36, atk: 4, mag: 10, def: 2, spd: 9, xp: 28, weak: ['light', 'fire'], resist: ['air'], art: 'wisp', acts: ['spell'], elem: 'shadow', spellName: 'Gloom Bolt' },
-  toad:     { name: 'Bog Toad', hp: 62, atk: 12, mag: 7, def: 5, spd: 6, xp: 40, weak: ['air'], resist: ['water'], art: 'toad', acts: ['hit', 'hit', 'all'], elem: 'water', allName: 'Mud Wave' },
-  gargoyle: { name: 'Gargoyle Sentry', hp: 120, atk: 19, mag: 0, def: 12, spd: 7, xp: 90, weak: ['air', 'water'], resist: ['fire', 'earth'], art: 'gargoyle', acts: ['hit'] },
+  toad:     { name: 'Moss Slime', hp: 62, atk: 12, mag: 7, def: 5, spd: 6, xp: 40, weak: ['air'], resist: ['water'], art: 'toad', acts: ['hit', 'hit', 'all'], elem: 'water', allName: 'Mud Wave' },
+  gargoyle: { name: 'Stone Golem', hp: 120, atk: 19, mag: 0, def: 12, spd: 7, xp: 90, weak: ['air', 'water'], resist: ['fire', 'earth'], art: 'gargoyle', acts: ['hit'] },
   shade:    { name: 'Shade Scholar', hp: 88, atk: 8, mag: 17, def: 6, spd: 11, xp: 85, weak: ['light', 'fire'], art: 'shade', acts: ['spell', 'spell', 'all'], elem: 'shadow', spellName: 'Dark Verse', allName: 'Forbidden Chorus' },
   warden:   { name: 'The Hollow Warden', hp: 820, atk: 22, mag: 24, def: 10, spd: 10, xp: 600, weak: ['light'], art: 'warden', acts: ['hit', 'spell', 'all', 'all'], elem: 'time', spellName: 'Unwind', allName: 'Clockstorm', boss: true },
+  slime:    { name: 'Blue Slime', hp: 34, atk: 8, mag: 6, def: 3, spd: 9, xp: 22, weak: ['fire', 'air'], resist: ['water'], art: 'slime', acts: ['hit', 'hit', 'spell'], elem: 'water', spellName: 'Bubble Spit' },
+  emberslime: { name: 'Ember Slime', hp: 38, atk: 10, mag: 9, def: 3, spd: 10, xp: 26, weak: ['water'], resist: ['fire'], art: 'emberslime', acts: ['hit', 'spell'], elem: 'fire', spellName: 'Cinder Spit' },
+  moth:     { name: 'Rune Moth', hp: 30, atk: 6, mag: 11, def: 2, spd: 15, xp: 28, weak: ['fire', 'air'], art: 'moth', acts: ['spell', 'spell', 'hit'], elem: 'arcane', spellName: 'Rune Dust' },
+  shroom:   { name: 'Mushroom Sprite', hp: 46, atk: 9, mag: 8, def: 4, spd: 7, xp: 32, weak: ['fire'], resist: ['earth'], art: 'shroom', acts: ['hit', 'all'], elem: 'earth', allName: 'Spore Cloud' },
+  scarab:   { name: 'Clockwork Scarab', hp: 80, atk: 17, mag: 10, def: 14, spd: 13, xp: 80, weak: ['water', 'air'], resist: ['fire'], art: 'scarab', acts: ['hit', 'hit', 'spell'], elem: 'time', spellName: 'Tick Shock' },
+  bone:     { name: 'Bone Sentry', hp: 110, atk: 20, mag: 0, def: 9, spd: 8, xp: 88, weak: ['light', 'earth'], resist: ['shadow'], art: 'bone', acts: ['hit'] },
+  apprentice: { name: 'Dark Apprentice', hp: 95, atk: 10, mag: 19, def: 7, spd: 12, xp: 95, weak: ['light'], art: 'apprentice', acts: ['spell', 'all'], elem: 'shadow', spellName: 'Hex Bolt', allName: 'Shadow Verse' },
+  cgolem:   { name: 'Crystal Golem', hp: 220, atk: 24, mag: 14, def: 16, spd: 7, xp: 170, weak: ['earth'], resist: ['fire', 'water'], art: 'cgolem', acts: ['hit', 'hit', 'all'], elem: 'arcane', allName: 'Prism Crash' },
+  rival:    { name: 'Cassius Vane', hp: 120, atk: 9, mag: 10, def: 5, spd: 11, xp: 90, art: 'rival', walker: 'cassius', acts: ['hit', 'spell', 'spell'], elem: 'fire', spellName: 'Showy Flame' },
   echo:     { name: 'Warden Echo', hp: 340, atk: 28, mag: 30, def: 14, spd: 12, xp: 360, weak: ['light'], art: 'warden', acts: ['hit', 'spell', 'all'], elem: 'time', spellName: 'Unwind', allName: 'Clockstorm' },
 };
 
@@ -421,6 +442,7 @@ const MAPS = {
       { x: 14, y: 0, to: 'hall', tx: 14, ty: 15 }, { x: 15, y: 0, to: 'hall', tx: 15, ty: 15 },
       { x: 0, y: 8, to: 'library', tx: 28, ty: 8 }, { x: 29, y: 8, to: 'grounds', tx: 1, ty: 8 },
     ],
+    props: [{ x: 22, y: 14, p: 'Wishing_Well', talk: () => wishingWell() }],
   },
   hall: {
     name: 'The Great Hall',
@@ -435,7 +457,7 @@ const MAPS = {
       '#.............==.............#',
       '#...tttttttt..==..tttttttt...#',
       '#.............==.............#',
-      '#.............==.............#',
+      '#.............==..............',
       '#...tttttttt..==..tttttttt...#',
       '#.............==.............#',
       '#c............==............c#',
@@ -443,13 +465,51 @@ const MAPS = {
       '#.............==.............#',
       '##############dd##############',
     ],
-    exits: [{ x: 14, y: 16, to: 'courtyard', tx: 14, ty: 1 }, { x: 15, y: 16, to: 'courtyard', tx: 15, ty: 1 }],
+    exits: [{ x: 14, y: 16, to: 'courtyard', tx: 14, ty: 1 }, { x: 15, y: 16, to: 'courtyard', tx: 15, ty: 1 }, { x: 29, y: 10, to: 'dorm', tx: 1, ty: 8 }],
+    props: [
+      { x: 4, y: 0, p: 'Royal_Banner', deco: true }, { x: 9, y: 0, p: 'Academy_Flag', deco: true }, { x: 20, y: 0, p: 'Academy_Flag', deco: true }, { x: 25, y: 0, p: 'Royal_Banner', deco: true },
+    ],
     onEnter: async () => {
       if (!S.flags.sorted && !S.flags.hallSeen) {
         S.flags.hallSeen = true;
         await say('Headmistress Thorne', 'You there, at the back. Come forward, please. Yes, you. Up to the dais.');
       }
     },
+  },
+  dorm: {
+    name: 'The Dormitory',
+    rows: [
+      '######w######ww######w########',
+      '#............................#',
+      '#.............==.............#',
+      '#.............==.............#',
+      '#.............==.............#',
+      '#.............==.............#',
+      '#.............==.............#',
+      '#.............==.............#',
+      '..............==.............#',
+      '#.............==.............#',
+      '#.............==.............#',
+      '#.............==.............#',
+      '#.............==.............#',
+      '#.............==.............#',
+      '#.............==.............#',
+      '#c............==............c#',
+      '##############################',
+    ],
+    exits: [{ x: 0, y: 8, to: 'hall', tx: 28, ty: 10 }],
+    props: [
+      { x: 3, y: 2, p: 'Student_Bed', talk: () => restInBed() }, { x: 6, y: 2, p: 'Student_Bed', talk: () => restInBed() }, { x: 9, y: 2, p: 'Student_Bed', talk: () => restInBed() },
+      { x: 4, y: 2, p: 'Nightstand' }, { x: 7, y: 2, p: 'Nightstand' },
+      { x: 20, y: 2, p: 'Student_Bed', talk: () => restInBed() }, { x: 23, y: 2, p: 'Student_Bed', talk: () => restInBed() }, { x: 26, y: 2, p: 'Student_Bed', talk: () => restInBed() },
+      { x: 21, y: 2, p: 'Nightstand' }, { x: 24, y: 2, p: 'Nightstand' },
+      { x: 12, y: 1, p: 'Bulletin_Board', talk: () => questBoard() },
+      { x: 2, y: 7, p: 'Magic_Mirror', talk: () => say(null, 'The mirror shows you, but older, in an Archwizard\'s robes. The reflection looks very tired. Then it is just you again.') },
+      { x: 4, y: 13, p: 'Wood_Desk', talk: () => say(null, 'Someone\'s homework: "Name three uses for a Moonleaf Tonic." The only answer written is "drinking it".') },
+      { x: 5, y: 13, p: 'Study_Chair' },
+      { x: 26, y: 12, p: 'Potion_Shelf' }, { x: 27, y: 12, p: 'Cauldron' },
+      { x: 9, y: 0, p: 'Royal_Banner', deco: true }, { x: 20, y: 0, p: 'Royal_Banner', deco: true },
+    ],
   },
   library: {
     name: 'The Library',
@@ -500,9 +560,10 @@ const MAPS = {
       'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
     ],
     exits: [{ x: 0, y: 8, to: 'courtyard', tx: 28, ty: 8 }],
+    props: [{ x: 13, y: 4, p: 'Duel_Arena_Glyph', deco: true, floor: true }],
     foes: () => S.flags.trained ? {
       spots: [[6, 11], [22, 13], [10, 14], [25, 9], [19, 11]],
-      groups: [['broom'], ['wisp', 'inkimp'], ['toad'], ['broom', 'wisp'], ['inkimp', 'inkimp']],
+      groups: [['broom'], ['wisp', 'slime'], ['toad'], ['broom', 'wisp'], ['slime', 'slime'], ['emberslime'], ['moth', 'broom'], ['shroom'], ['emberslime', 'moth']],
     } : null,
   },
   archive: {
@@ -530,7 +591,7 @@ const MAPS = {
     exits: [{ x: 14, y: 16, to: 'library', tx: 14, ty: 2 }, { x: 15, y: 16, to: 'library', tx: 15, ty: 2 }],
     foes: () => ({
       spots: [[4, 8], [25, 10], [15, 8], [8, 12], [20, 14]],
-      groups: [['gargoyle'], ['shade', 'wisp'], ['shade'], ['gargoyle', 'wisp']],
+      groups: [['gargoyle'], ['shade', 'wisp'], ['shade'], ['gargoyle', 'wisp'], ['scarab'], ['bone', 'wisp'], ['apprentice'], ['scarab', 'apprentice'], ['bone', 'scarab']],
     }),
   },
 };
@@ -546,6 +607,10 @@ const LOOKS = {
   quillon: { robe: '#24464a', trim: '#2fb3a8', hair: '#6a6a7a', skin: '#d8b090', hat: '#1a3034' },
   brannoch: { robe: '#5a3e24', trim: '#ec8a2f', hair: '#d23f3a', skin: '#e0a880' },
   mira: { robe: '#1f4fa3', trim: '#2f8fbf', hair: '#ec8a2f', skin: '#f2c89a' },
+  hob: { robe: '#3d5a2a', trim: '#f5a93a', hair: '#7a5432', skin: '#e0a880' },
+  cassius: { robe: '#7a2234', trim: '#f5a93a', hair: '#dfe5df', skin: '#f2c89a' },
+  chef: { robe: '#dfe5df', trim: '#d23f3a', hair: '#ec8a2f', skin: '#f2c89a' },
+  bryony: { robe: '#2fb3a8', trim: '#f08aa0', hair: '#f08aa0', skin: '#f2c89a' },
 };
 const heroLook = () => ({ robe: '#1f2a5a', trim: S && S.house ? HOUSES[S.house].color : '#8a8aa0', hair: '#1b1f33', skin: '#f2c89a' });
 
@@ -557,15 +622,27 @@ const AVAILABLE = [
   'portrait_hero.png', 'portrait_mira.png', 'portrait_thorne.png', 'portrait_brannoch.png', 'portrait_quillon.png',
   'title_bg.png', 'logo.png', 'btn_dpad.png', 'btn_a.png', 'btn_b.png', 'btn_menu.png',
 ];
+// Sprites from the Magic Academy Art Pack (assets/pack/, native 1x pixel art drawn at half size so each pixel is exact)
+const PACK = {
+  char: ['Prefect', 'Headmaster', 'Professor_Flame', 'Archivist', 'First_Year_A', 'First_Year_B', 'First_Year_C', 'Oracle', 'Groundskeeper', 'Rival', 'Dining_Hall_Chef', 'Potion_Apprentice'],
+  foe: ['Armored_Dummy', 'Cursed_Tome', 'Living_Broom', 'Arcane_Wisp', 'Moss_Slime', 'Stone_Golem', 'Shadow_Wraith', 'Blue_Slime', 'Ember_Slime', 'Rune_Moth', 'Mushroom_Sprite', 'Clockwork_Scarab', 'Bone_Sentry', 'Dark_Apprentice', 'Crystal_Golem', 'Void_Sentinel'],
+  fam: ['Midnight_Cat', 'Star_Rabbit', 'Boreal_Owl', 'Moss_Sprout'],
+  fx: ['Fire_Burst', 'Water_Splash', 'Nature_Bloom', 'Wind_Slash', 'Arcane_Rune', 'Star_Shower', 'Dark_Pulse', 'Time_Stop', 'Healing_Aura', 'Blazing_Sigil', 'Familiar_Summon'],
+  prop: ['Treasure_Chest', 'Student_Bed', 'Nightstand', 'Bulletin_Board', 'Potion_Shelf', 'Royal_Banner', 'Academy_Flag', 'Grand_Globe', 'Cauldron', 'Magic_Mirror', 'Spell_Altar', 'Wishing_Well', 'Astrolabe', 'Study_Chair', 'Wood_Desk', 'Stained_Glass', 'Duel_Arena_Glyph'],
+};
+const PACK_FILES = [...Object.entries(PACK).flatMap(([k, list]) => list.map(n => `${k}_${n}.png`)), 'items24.png'];
+const packImg = (kind, name) => IMG[`pack/${kind}_${name}.png`];
 const IMG = {};
 const HERO_TINTS = {};
 function loadAssets() {
-  for (const f of AVAILABLE) {
+  const load = (src, key) => {
     const im = new Image();
-    im.onload = () => { IMG[f] = im; onAsset(f, im); };
-    im.onerror = () => console.warn('Asset listed but missing:', f);
-    im.src = 'assets/' + f;
-  }
+    im.onload = () => { IMG[key] = im; onAsset(key, im); };
+    im.onerror = () => console.warn('Asset listed but missing:', src);
+    im.src = src;
+  };
+  for (const f of AVAILABLE) load('assets/' + f, f);
+  for (const f of PACK_FILES) load('assets/pack/' + f, 'pack/' + f);
 }
 function onAsset(f, im) {
   if (f === 'hero_field.png') {
@@ -610,17 +687,39 @@ function tintScarf(im, hex) {
   } catch (e) { return im; } // pixel access is blocked when the page is opened from disk; keep the red scarf
 }
 const WALK_ROW = { down: 0, left: 1, right: 2, up: 3 };
-// Walker sheets: 6 cols x 4 rows (rows down/left/right/up; cols 0-1 idle, 2-5 walk). Drawn at half size.
-function drawWalker(im, x, feetY, dir, moving, t) {
+// Walker sheets, rows down/left/right/up, drawn at half size:
+//   HD sheets: 6 cols of square frames (cols 0-1 idle, 2-5 walk)
+//   pack sheets: 10 cols of 32x48 (0-1 idle, 2-5 walk, 6-9 cast)
+const walkerMeta = im => (im.width === 320 && im.height === 192) ? { cols: 10, fw: 32, fh: 48 } : { cols: 6, fw: im.width / 6, fh: im.width / 6 };
+function drawWalker(im, x, feetY, dir, moving, t, cast) {
   if (!im) return false;
-  const f = im.width / 6, d = f / 2;
-  const col = moving ? 2 + (Math.floor(t * 8) % 4) : Math.floor(t * 2) % 2;
+  const m = walkerMeta(im), dw = m.fw / 2, dh = m.fh / 2;
+  let col = moving ? 2 + (Math.floor(t * 8) % 4) : Math.floor(t * 2) % 2;
+  if (cast && m.cols >= 10) col = 6 + (Math.floor(t * 10) % 4);
   px(x + 2, feetY - 1, 12, 2, 'rgba(0,0,0,.3)');
-  ctx.drawImage(im, col * f, WALK_ROW[dir] * f, f, f, Math.round(x + 8 - d / 2), Math.round(feetY - d + 1), d, d);
+  ctx.drawImage(im, col * m.fw, WALK_ROW[dir] * m.fh, m.fw, m.fh, Math.round(x + 8 - dw / 2), Math.round(feetY - dh + 1), dw, dh);
   return true;
 }
 const heroSheet = () => HERO_TINTS[S && S.house ? S.house : 'none'] || null;
-const npcSheet = id => IMG[`npc_${id}.png`] || (id === 'mira' ? IMG['mira_field.png'] : null);
+const NPC_CHAR = { aldous: 'Prefect', thorne: 'Headmaster', brannoch: 'Professor_Flame', quillon: 'Archivist', pell: 'First_Year_A', juniper: 'First_Year_B', tobias: 'First_Year_C', ghost: 'Oracle', hob: 'Groundskeeper', cassius: 'Rival', chef: 'Dining_Hall_Chef', bryony: 'Potion_Apprentice' };
+const npcSheet = id => IMG[`npc_${id}.png`] || (id === 'mira' ? IMG['mira_field.png'] : null) || (NPC_CHAR[id] && packImg('char', NPC_CHAR[id])) || null;
+// Pack enemies: 6 frames of 48x48 in one row (0-3 idle, 4-5 attack). [sprite, battle scale]
+const FOE_PACK = {
+  dummy: ['Armored_Dummy', 1], imp: ['Cursed_Tome', 1], broom: ['Living_Broom', 1], wisp: ['Arcane_Wisp', 1], toad: ['Moss_Slime', 1],
+  gargoyle: ['Stone_Golem', 2], shade: ['Shadow_Wraith', 2], slime: ['Blue_Slime', 1], emberslime: ['Ember_Slime', 1], moth: ['Rune_Moth', 1],
+  shroom: ['Mushroom_Sprite', 1], scarab: ['Clockwork_Scarab', 1], bone: ['Bone_Sentry', 2], apprentice: ['Dark_Apprentice', 2],
+  cgolem: ['Crystal_Golem', 2], sentinel: ['Void_Sentinel', 2],
+};
+function drawPackFoe(art, cx, cy, t, state, field) {
+  const e = FOE_PACK[art], im = e && packImg('foe', e[0]);
+  if (!im) return false;
+  const d = 24 * (field ? 1 : e[1]);
+  const col = state === 'attack' ? 4 + (Math.floor(t * 8) % 2) : Math.floor(t * 6) % 4;
+  px(cx - d * .3, cy + d * .38, d * .6, 2, 'rgba(0,0,0,.3)');
+  ctx.drawImage(im, col * 48, 0, 48, 48, Math.round(cx - d / 2), Math.round(cy - d * .6), d, d);
+  return true;
+}
+const foeScale = c => (FOE_PACK[c.art] && packImg('foe', FOE_PACK[c.art][0])) ? FOE_PACK[c.art][1] : 1;
 // Foe sheets: 4 cols x 2 rows (row 0 idle x4; row 1 attack x3 then hurt). Centred on (cx, cy).
 function drawFoeSprite(art, cx, cy, t, state, mul = 1) {
   const im = IMG[`foe_${art}.png`];
@@ -653,15 +752,66 @@ const handlers = [];   // input focus stack for menus and dialog
 const push = h => handlers.push(h);
 const pop = h => { const i = handlers.lastIndexOf(h); if (i >= 0) handlers.splice(i, 1); };
 
+// Equipment: one of each slot. Icons come from the pack's 24px item atlas.
+const ITEM_ICONS = ['Red_Potion', 'Blue_Potion', 'Green_Potion', 'Antidote', 'Mana_Tonic', 'Elixir', 'Healing_Herb', 'Magic_Leaf', 'Flower_Petal', 'Mana_Crystal', 'Fire_Stone', 'Ice_Stone', 'Thunder_Stone', 'Rune_Stone', 'Magic_Key', 'Silver_Key', 'Golden_Key', 'Academy_Badge', 'Guild_Crest', 'Star_Compass', 'Novice_Wand', 'Oak_Wand', 'Master_Wand', 'Magic_Staff', 'Rapier', 'Short_Sword', 'Long_Sword', 'Dagger', 'Training_Shield', 'Rune_Shield', 'Novice_Robe', 'Scholar_Robe', 'Academy_Hat', 'Moon_Hat', 'Ruby_Ring', 'Sapphire_Ring', 'Amethyst_Ring', 'Magic_Amulet', 'Grimoire', 'Spell_Scroll', 'Library_Pass', 'Student_Notes', 'Treasure_Map', 'Sealed_Letter', 'Ancient_Tome', 'Phoenix_Feather', 'Creature_Egg', 'Summon_Sigil', 'Monster_Fang', 'Iron_Ore', 'Moon_Blossom', 'Mystery_Seed', 'Copper_Coin', 'Gold_Coin', 'Star_Token', 'Training_Dummy_Token', 'Duel_Medal', 'Locket', 'Clockwork_Gear', 'Magic_Lantern', 'Quest_Marker', 'Exclamation_Alert', 'Small_Heart', 'Mana_Star'];
+const itemIcon = name => { const i = ITEM_ICONS.indexOf(name); return i < 0 ? '' : `<i class="ii" style="background-position:${(i % 8) * 100 / 7}% ${Math.floor(i / 8) * 100 / 7}%"></i>`; };
+const SLOTS = { wand: 'Wand', robe: 'Robe', ring: 'Ring', charm: 'Charm' };
+const GEAR = {
+  novice_wand: { name: 'Novice Wand', slot: 'wand', icon: 'Novice_Wand' },
+  oak_wand: { name: 'Oak Wand', slot: 'wand', icon: 'Oak_Wand', mag: 4, atk: 2 },
+  master_wand: { name: 'Master Wand', slot: 'wand', icon: 'Master_Wand', mag: 10, atk: 4 },
+  novice_robe: { name: 'Novice Robe', slot: 'robe', icon: 'Novice_Robe' },
+  scholar_robe: { name: 'Scholar Robe', slot: 'robe', icon: 'Scholar_Robe', def: 4, maxhp: 15 },
+  moon_hat: { name: 'Moon Hat', slot: 'robe', icon: 'Moon_Hat', def: 2, mag: 3, maxmp: 6 },
+  ruby_ring: { name: 'Ruby Ring', slot: 'ring', icon: 'Ruby_Ring', atk: 4 },
+  sapphire_ring: { name: 'Sapphire Ring', slot: 'ring', icon: 'Sapphire_Ring', maxmp: 10 },
+  amethyst_ring: { name: 'Amethyst Ring', slot: 'ring', icon: 'Amethyst_Ring', spd: 2, mag: 2 },
+  academy_badge: { name: 'Academy Badge', slot: 'charm', icon: 'Academy_Badge', def: 2, xp: .15 },
+  duel_medal: { name: 'Duel Medal', slot: 'charm', icon: 'Duel_Medal', atk: 3, spd: 1 },
+  magic_amulet: { name: 'Magic Amulet', slot: 'charm', icon: 'Magic_Amulet', mag: 5, def: 5, maxhp: 20 },
+};
+const STAT_LABEL = { atk: 'ATK', mag: 'MAG', def: 'DEF', spd: 'SPD', maxhp: 'HP', maxmp: 'MP', xp: 'XP' };
+const gearText = g => Object.entries(STAT_LABEL).filter(([k]) => g[k]).map(([k, l]) => k === 'xp' ? `+${Math.round(g[k] * 100)}% ${l}` : `+${g[k]} ${l}`).join(' ') || 'No bonus';
+function heroEff() {
+  const st = heroStats(S.lv);
+  for (const id of Object.values(S.gear || {})) { const g = GEAR[id]; if (!g) continue; for (const k of ['atk', 'mag', 'def', 'spd', 'maxhp', 'maxmp']) st[k] += g[k] || 0; }
+  if (S.lv === 1) st.maxmp = 0; // no magic until the spark wakes
+  return st;
+}
+const xpBonus = () => Object.values(S.gear || {}).reduce((a, id) => a + ((GEAR[id] && GEAR[id].xp) || 0), 0);
+// Familiars (the look book's four)
+const FAMS = {
+  cat: { name: 'Midnight Cat', sprite: 'Midnight_Cat', assist: 'Shadow Pounce', desc: 'pounces on a foe' },
+  rabbit: { name: 'Star Rabbit', sprite: 'Star_Rabbit', assist: 'Lucky Star', desc: 'heals the party' },
+  owl: { name: 'Boreal Owl', sprite: 'Boreal_Owl', assist: 'Wing Gust', desc: 'hits every foe with wind' },
+  sprout: { name: 'Moss Sprout', sprite: 'Moss_Sprout', assist: 'Dew Drop', desc: 'restores the party\'s MP' },
+};
+// Hidden chests: { map, x, y, gear | items }
+const CHESTS = {
+  c_court: { map: 'courtyard', x: 27, y: 15, gear: 'ruby_ring' },
+  c_hall: { map: 'hall', x: 2, y: 14, gear: 'sapphire_ring' },
+  c_lib: { map: 'library', x: 27, y: 15, items: { ether: 2, tonic: 1 } },
+  c_grounds: { map: 'grounds', x: 27, y: 15, gear: 'scholar_robe' },
+  c_dorm: { map: 'dorm', x: 27, y: 14, gear: 'academy_badge' },
+  c_arch1: { map: 'archive', x: 2, y: 15, gear: 'magic_amulet' },
+  c_arch2: { map: 'archive', x: 27, y: 5, gear: 'master_wand' },
+};
+function migrate(s) {
+  s.gear = s.gear || { wand: 'novice_wand', robe: 'novice_robe', ring: null, charm: null };
+  s.bag = s.bag || ['novice_wand', 'novice_robe'];
+  s.chests = s.chests || {};
+  s.familiar = s.familiar || null;
+  return s;
+}
 function newState(name) {
-  return { v: 2, name, lv: 1, xp: 0, hp: 42, mp: 0, house: null, flags: {}, items: { tonic: 2, ether: 0 }, memories: [],
-    map: 'courtyard', x: 14, y: 10, dir: 'up', goal: 'Find orientation in the Great Hall (north doors).', mira: null };
+  return migrate({ v: 2, name, lv: 1, xp: 0, hp: 42, mp: 0, house: null, flags: {}, items: { tonic: 2, ether: 0 }, memories: [],
+    map: 'courtyard', x: 14, y: 10, dir: 'up', goal: 'Find orientation in the Great Hall (north doors).', mira: null });
 }
 const SAVE_KEY = 'aldermere-save-v2'; // v2: larger maps, so v1 positions no longer line up
 function save() { if (!S) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
 function loadSave() { try { const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
 function restoreParty() {
-  const st = heroStats(S.lv); S.hp = st.maxhp; S.mp = st.maxmp;
+  const st = heroEff(); S.hp = st.maxhp; S.mp = st.maxmp;
   if (S.mira) { const ms = miraStats(miraLv()); S.mira.hp = ms.maxhp; S.mira.mp = ms.maxmp; }
 }
 function setGoal(g) { S.goal = g; }
@@ -729,7 +879,7 @@ function menu(el, items, { start = 0, noCancel = false } = {}) {
     const nodes = items.map((it, i) => {
       const d = document.createElement('div');
       d.className = 'opt' + (it.dis ? ' dis' : '');
-      d.innerHTML = `<span>${iconHTML(it.icon || it.label)}${esc(it.label)}</span>` + (it.sub ? `<span class="sub">${esc(it.sub)}</span>` : '');
+      d.innerHTML = `<span>${it.item ? itemIcon(it.item) : iconHTML(it.icon || it.label)}${esc(it.label)}</span>` + (it.sub ? `<span class="sub">${esc(it.sub)}</span>` : '');
       d.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (it.dis) return; sel = i; draw(); done(i); });
       el.appendChild(d); return d;
     });
@@ -758,6 +908,7 @@ const SPEAKERS = {
   'Headmistress Thorne': 'thorne', 'Prefect Aldous': 'aldous', 'Instructor Brannoch': 'brannoch', 'Librarian Quillon': 'quillon',
   'Mira': 'mira', 'Pell': 'pell', 'Juniper': 'juniper', 'Tobias': 'tobias', 'Sir Pemberton': 'ghost',
   'The Hollow Warden': 'warden', 'Oracle Lantern': 'lantern',
+  'Hob': 'hob', 'Cassius Vane': 'cassius', 'Madame Pottage': 'chef', 'Bryony': 'bryony',
 };
 const FACES = { neutral: 0, happy: 1, shocked: 2, sad: 3 };
 const pctx = $('portrait').getContext('2d');
@@ -773,7 +924,7 @@ function drawPortrait(id, face) {
   const t = performance.now() / 1000;
   if (id === 'hero' && heroSheet()) { pc.drawImage(heroSheet(), 14, 2, 36, 36, 0, 0, N, N); return; }
   const sheet = npcSheet(id);
-  if (sheet) { const f = sheet.width / 6; pc.drawImage(sheet, f * .22, f * .03, f * .56, f * .56, 0, 0, N, N); return; }
+  if (sheet) { const m = walkerMeta(sheet); pc.drawImage(sheet, m.fw * .14, 0, m.fw * .72, m.fw * .72, 0, 0, N, N); return; }
   withCtx(pc, () => {
     if (id === 'warden') { pc.setTransform(2.4, 0, 0, 2.4, 0, 0); drawFoe('warden', 26.6, 42, t, 1); }
     else if (id === 'lantern') { pc.setTransform(7, 0, 0, 7, 0, 0); drawNPC({ kind: 'lantern', x: 0, y: 0 }, t, 1, 5); }
@@ -997,6 +1148,7 @@ function drawPerson(x, y, o) {
 
 function drawFoe(art, cx, cy, t, k = 1, state) {
   if (drawFoeSprite(art, cx, cy, t, state, art === 'warden' ? k : 1)) return;
+  if (drawPackFoe(art, cx, cy, t, state, k < 1)) return;
   const x = Math.round(cx), y = Math.round(cy);
   switch (art) {
     case 'dummy':
@@ -1087,6 +1239,7 @@ function drawNPC(n, t, ox = 0, oy = 0) {
 const NPCS = {
   courtyard: [
     { x: 17, y: 3, kind: 'person', look: 'aldous', dir: 'down', talk: talkAldous },
+    { x: 24, y: 13, kind: 'person', look: 'hob', dir: 'left', show: () => S.flags.sorted, talk: talkHob },
     { x: 8, y: 13, kind: 'person', look: 'pell', dir: 'right', talk: () => say('Pell', 'The fountain is charmed. Drink from it and you will feel right as rain. Tastes a bit like pennies, though.') },
   ],
   hall: [
@@ -1096,6 +1249,7 @@ const NPCS = {
     { x: 6, y: 6, kind: 'person', look: 'juniper', dir: 'down', talk: () => say('Juniper', S.flags.sorted
         ? 'You are the Unwritten Student! The Quill has not added a name in six hundred years. My sister thinks you are a spy. I think you are a ghost. No offence, Sir Pemberton.'
         : 'Did you hear? The Admissions Quill wrote one extra name this morning. Nobody knows who it is.') },
+    { x: 18, y: 6, kind: 'person', look: 'chef', dir: 'down', talk: talkChef },
     { x: 21, y: 9, kind: 'person', look: 'tobias', dir: 'left', talk: () => say('Tobias', 'The stairs in the east tower move on Tuesdays. Today is Tuesday. I have been late to everything since breakfast.') },
   ],
   library: [
@@ -1105,7 +1259,11 @@ const NPCS = {
   ],
   grounds: [
     { x: 8, y: 4, kind: 'person', look: 'brannoch', dir: 'right', talk: talkBrannoch },
+    { x: 20, y: 5, kind: 'person', look: 'cassius', dir: 'left', show: () => S.flags.trained && !(B && B.opts.duel), talk: talkCassius },
     { x: 16, y: 4, kind: 'dummy', talk: async () => { if (!S.flags.trained) return talkBrannoch(); await say(null, 'The training dummy sags on its post. It looks like it needs a lie down.'); } },
+  ],
+  dorm: [
+    { x: 25, y: 12, kind: 'person', look: 'bryony', dir: 'down', talk: talkBryony },
   ],
   archive: [
     { x: 14, y: 1, kind: 'warden', show: () => !S.flags.chapter1, talk: talkWarden },
@@ -1113,6 +1271,121 @@ const NPCS = {
 };
 const visibleNPCs = () => (NPCS[MAPID] || []).filter(n => !n.show || n.show());
 const npcAt = (x, y) => visibleNPCs().find(n => n.x === x && n.y === y);
+const mapProps = () => [...(MAP.props || []), ...Object.entries(CHESTS).filter(([, c]) => c.map === MAPID).map(([id, c]) => ({ x: c.x, y: c.y, p: 'Treasure_Chest', chest: id, talk: () => openChest(id) }))];
+const propAt = (x, y) => mapProps().find(o => !o.deco && o.x === x && o.y === y);
+function drawProp(o, t) {
+  const im = packImg('prop', o.p);
+  const x = o.x * TS, y = o.y * TS;
+  if (!im) { px(x + 3, y + 4, 10, 10, o.chest ? '#7a4e2a' : '#3a3f66'); if (o.chest) px(x + 3, y + 8, 10, 1, '#f5a93a'); return; }
+  if (o.chest && S.chests[o.chest]) ctx.globalAlpha = .5;
+  ctx.drawImage(im, x - 8, o.floor ? y - 8 : (o.deco ? y - 6 : y - 14), 32, 32);
+  ctx.globalAlpha = 1;
+  if (o.chest && !S.chests[o.chest] && Math.sin(t * 3 + o.x) > .85) px(x + 11, y - 4, 2, 2, '#f5a93a');
+}
+
+async function talkHob() {
+  if (S.familiar) {
+    const f = FAMS[S.familiar];
+    return say('Hob', `How is your ${f.name} getting on? It ${f.desc} when you need it most. About every third time you act in a fight, by my count.`, { face: 'happy' });
+  }
+  await say('Hob', 'Hob. Groundskeeper. Every first-year bonds with a familiar in their first week. You missed the ceremony, being unwritten and all.');
+  await say('Hob', 'These four have been waiting by the fountain all morning. They seem to think they know you.');
+  const keys = Object.keys(FAMS);
+  const i = await choose('Hob', 'Which one comes to you?', keys.map(k => `${FAMS[k].name}: ${FAMS[k].desc}`));
+  S.familiar = keys[i];
+  await say(null, `The ${FAMS[S.familiar].name} bonds with you. It will follow you everywhere now, whether you like it or not.`);
+  await say('Hob', 'Look after it. It will look after you.', { face: 'happy' });
+}
+
+async function talkChef() {
+  restoreParty();
+  await say('Madame Pottage', pick([
+    'Stew! It is always stew. Today it is stew with a little bit of courage in it. Eat up.',
+    'You look peaky. Eat this. No, I will not say what is in it. Magic, mostly.',
+    'The Headmistress takes her tea with seven sugars. Do not tell her I told you.',
+  ]));
+  await say(null, 'The stew is hot and strange and wonderful. Your party feels completely restored.');
+}
+
+async function talkBryony() {
+  if (!S.flags.bryonyGift) {
+    S.flags.bryonyGift = true; S.items.tonic += 2;
+    await say('Bryony', 'You are the new one! Welcome to the dorm. Here, two Moonleaf Tonics. I brewed them myself. Mostly safe.', { face: 'happy' });
+  } else await say('Bryony', 'The beds are charmed for a perfect night\'s sleep. Lie down if you are hurt. The board by the door lists what everyone needs help with.');
+}
+
+async function restInBed() {
+  const i = await choose(null, 'Rest until morning? You will wake fully healed and your progress will be saved.', ['Rest', 'Not yet']);
+  if (i !== 0) return;
+  await fadeOut();
+  restoreParty();
+  save();
+  await sleep(500);
+  await fadeIn();
+  toast('Rested and saved');
+  await say(null, pick(['You dream of a clocktower whose hands run backwards.', 'You dream of a red-haired girl laughing at something you said. Then the dream is gone.', 'You sleep without dreaming, for once.']));
+}
+
+function sideQuests() {
+  const chests = Object.keys(CHESTS).filter(k => S.chests[k]).length, trials = [0, 1, 2].filter(i => S.flags['trial' + i]).length;
+  return [
+    [!!S.familiar, 'Bond with a familiar (Hob, in the courtyard)'],
+    [!!S.flags.rivalBeaten, 'Win a duel against Cassius Vane (Training Grounds)'],
+    [chests === Object.keys(CHESTS).length, `Find the hidden chests (${chests}/${Object.keys(CHESTS).length})`],
+    [trials === 3, `Pass Brannoch's Trials (${trials}/3)`],
+  ];
+}
+async function questBoard() {
+  await say(null, 'NOTICES\n' + S.goal + '\n\nHELP WANTED\n' + sideQuests().map(([done, t]) => (done ? '[done] ' : '[ ] ') + t).join('\n'));
+}
+
+async function openChest(id) {
+  const c = CHESTS[id];
+  if (S.chests[id]) return say(null, 'The chest is empty. Someone got here first. You did.');
+  S.chests[id] = true;
+  if (c.gear) {
+    const g = GEAR[c.gear];
+    if (!S.bag.includes(c.gear)) S.bag.push(c.gear);
+    let msg = `Found ${g.name}! (${gearText(g)})`;
+    if (!S.gear[g.slot] || ['novice_wand', 'novice_robe'].includes(S.gear[g.slot])) { S.gear[g.slot] = c.gear; msg += ' You put it on.'; }
+    else msg += ' Equip it from the menu.';
+    await say(null, msg);
+  } else {
+    const parts = Object.entries(c.items).map(([k, n]) => { S.items[k] += n; return `${n} ${k === 'tonic' ? 'Moonleaf Tonic' : 'Ether Drop'}${n > 1 ? 's' : ''}`; });
+    await say(null, `Found ${parts.join(' and ')}!`);
+  }
+}
+
+async function wishingWell() {
+  if (S.flags.wished) return say(null, 'Your coin is still down there, glinting. Wishes take time.');
+  const i = await choose(null, 'An old wishing well. A copper coin sits on the rim, as if someone left it for you.', ['Make a wish', 'Leave it']);
+  if (i !== 0) return;
+  S.flags.wished = true; S.items.ether += 1;
+  await say(null, 'You wish to remember. The water glows faintly, and an Ether Drop bobs up to the surface. Not quite what you asked for.');
+}
+
+async function talkCassius() {
+  const rivalHouse = S.house === 'gale' ? 'ember' : 'gale';
+  if (!S.flags.rivalMet) {
+    S.flags.rivalMet = true;
+    await say('Cassius Vane', `Cassius Vane. ${HOUSES[rivalHouse].name}. My family has sent a Vane to Aldermere for eleven generations, and not one of us was ever written in late.`);
+    await say('Cassius Vane', 'You are the Unwritten Student. The one with no spark. I want to see what all the fuss is about.');
+  }
+  if (S.flags.rivalBeaten) {
+    return say('Cassius Vane', S.flags.chapter1 ? 'I heard you went into the Archive and came back out. Fine. You are interesting. Do not let it go to your head.' : 'Do not look so pleased. That was one duel. Next term I will have three new spells.');
+  }
+  const i = await choose('Cassius Vane', 'Duel me in the arena. Unless you would rather go and hide in the library.', ['Accept the duel', 'Not today']);
+  if (i !== 0) return say('Cassius Vane', 'As I thought.');
+  const lv = Math.max(2, S.lv);
+  Object.assign(FOES.rival, { hp: 40 + 20 * lv, atk: Math.round(4 + 1.8 * lv), mag: 4 + 2 * lv, def: Math.round(2 + 1.2 * lv), spd: 9 + .3 * lv, xp: 30 * lv, acts: ['hit', 'hit', 'spell'] });
+  const r = await fight(['rival'], { noFlee: true, duel: true });
+  if (r !== 'win') { await say('Cassius Vane', 'As expected. Come back when you have learned a second spell.'); return; }
+  S.flags.rivalBeaten = true;
+  if (!S.bag.includes('oak_wand')) S.bag.push('oak_wand');
+  if (!S.bag.includes('duel_medal')) S.bag.push('duel_medal');
+  await say('Cassius Vane', 'That... was a fluke. Take this wand. It was my first. I do not need it anymore. Obviously.');
+  await say(null, `Received the Oak Wand (${gearText(GEAR.oak_wand)}) and a Duel Medal (${gearText(GEAR.duel_medal)}). Equip them from the menu.`);
+}
 
 async function talkAldous() {
   if (!S.flags.sorted) {
@@ -1194,7 +1467,7 @@ async function talkBrannoch() {
   }
   const trials = [
     { label: 'Trial I: Unruly Pack', keys: ['inkimp', 'broom', 'inkimp'], line: 'Brooms and imps. Mind your ankles.' },
-    { label: 'Trial II: Stone and Gloom', keys: ['gargoyle', 'wisp'], line: 'A gargoyle off the east roof and its gloomy little friend. Bring Mira.' },
+    { label: 'Trial II: Crystal Golem', keys: ['cgolem'], line: 'A crystal golem from the observatory. It does not like being woken up. Bring Mira.' },
   ];
   if (S.flags.chapter1) trials.push({ label: 'Trial III: Echo of the Warden', keys: ['echo'], line: 'I bottled an echo of the thing in the Archive. It is not happy about it.' });
   const opts = [...trials.map(t => t.label), 'Not now'];
@@ -1202,7 +1475,12 @@ async function talkBrannoch() {
   if (i >= trials.length) return say('Instructor Brannoch', 'Suit yourself. The dummy is always here.');
   await say('Instructor Brannoch', trials[i].line);
   const r = await fight(trials[i].keys, {});
-  if (r === 'win') { S.items.tonic++; await say('Instructor Brannoch', 'Well fought! Here, have a Moonleaf Tonic. You have earned it.', { face: 'happy' }); }
+  if (r === 'win') {
+    S.flags['trial' + i] = true; S.items.tonic++;
+    await say('Instructor Brannoch', 'Well fought! Here, have a Moonleaf Tonic. You have earned it.', { face: 'happy' });
+    if (i === 1 && !S.bag.includes('moon_hat')) { S.bag.push('moon_hat'); await say(null, `Brannoch also hands you a Moon Hat (${gearText(GEAR.moon_hat)}). "Found it in the observatory. Suits you better than the golem."`); }
+    if (i === 2 && !S.bag.includes('amethyst_ring')) { S.bag.push('amethyst_ring'); await say(null, `Brannoch presses an Amethyst Ring (${gearText(GEAR.amethyst_ring)}) into your hand. "For surviving that. Barely."`); }
+  }
 }
 
 async function talkQuillon() {
@@ -1220,7 +1498,7 @@ async function talkQuillon() {
 async function talkMira() {
   if (!S.flags.trained) return say('Mira', 'Sorry, I can\'t talk. I am having a small problem with a book. It is fine. Everything is fine.', { face: 'shocked' });
   await say('Mira', 'Oh, thank goodness, someone with a wand. Don\'t look at me like that. It was ONE page.', { face: 'shocked' });
-  await say('Mira', 'They are Inkimps. They eat punctuation. Help me put them back before they get to the encyclopaedias!');
+  await say('Mira', 'They are Inkimps. Pages that bite. They eat punctuation. Help me put them back before they get to the encyclopaedias!');
   const ms = miraStats(miraLv());
   S.mira = { hp: ms.maxhp, mp: ms.maxmp };
   S.flags.mira = true;
@@ -1302,7 +1580,7 @@ const LORE = {
 // ---------------------------------------------------------------- field
 function loadMap(id, x, y, dir) {
   MAPID = id; MAP = MAPS[id];
-  P = { x, y, tx: x, ty: y, dir: dir || 'down', moving: false, prog: 0, step: 0 };
+  P = { x, y, tx: x, ty: y, dir: dir || 'down', moving: false, prog: 0, step: 0, hist: [[x, y, dir || 'down'], [x, y, dir || 'down'], [x, y, dir || 'down']] };
   S.map = id; S.x = x; S.y = y; S.dir = P.dir;
   mode = 'explore';
   spawnField();
@@ -1335,7 +1613,7 @@ function walkable(x, y, forFoe) {
   const c = tileAt(x, y);
   if (c === 'g') { if (!S.flags.archiveOpen) return false; }
   else if (SOLID.has(c)) return false;
-  if (npcAt(x, y)) return false;
+  if (npcAt(x, y) || propAt(x, y)) return false;
   if (forFoe) {
     if (MAP.exits.some(e => e.x === x && e.y === y)) return false;
     if (FIELD.some(f => (f.x === x && f.y === y) || (f.tx === x && f.ty === y))) return false;
@@ -1361,7 +1639,7 @@ function updateExplore(dt) {
     if (d) {
       P.dir = d;
       const nx = P.x + STEP[d][0], ny = P.y + STEP[d][1];
-      if (walkable(nx, ny)) { P.tx = nx; P.ty = ny; P.moving = true; P.prog = 0; P.step ^= 1; }
+      if (walkable(nx, ny)) { P.hist.unshift([P.x, P.y, d]); P.hist.length = 3; P.tx = nx; P.ty = ny; P.moving = true; P.prog = 0; P.step ^= 1; }
     }
   }
   updateCamera();
@@ -1403,6 +1681,9 @@ function exploreAction(a) {
     if (n.dir) n.dir = { up: 'down', down: 'up', left: 'right', right: 'left' }[P.dir];
     run(n.talk); return;
   }
+  const o = propAt(fx, fy);
+  if (o && o.talk) { run(o.talk); return; }
+  if (o) { run(() => say(null, { Nightstand: 'A nightstand with a candle stub and a very overdue library book.', Study_Chair: 'A wobbly chair. It has carved initials on the back: yours, but older.', Potion_Shelf: 'Rows of bubbling bottles. One is labelled DO NOT. Another is labelled DEFINITELY DO NOT.', Cauldron: 'Something in the cauldron blinks at you.' }[o.p] || 'Nothing interesting.')); return; }
   const c = tileAt(fx, fy);
   if (c === 'g') run(gateScript);
   else if (c === 'f') run(async () => { restoreParty(); await say(null, 'You drink from the fountain. The water tastes of rain and copper. You feel completely restored.'); });
@@ -1413,27 +1694,50 @@ function exploreAction(a) {
 }
 
 // ---------------------------------------------------------------- pause menu
+function pauseHTML() {
+  const st = heroEff();
+  const nr = nextRank(S.lv);
+  const toNext = S.lv >= MAXLV ? 'Max level' : `${XP[S.lv + 1] - S.xp} XP to Lv ${S.lv + 1}`;
+  const card = (nm, sub, hp, mhp, mp, mmp, extra) => `<div class="pc"><span class="nm">${esc(nm)}</span><span class="dim">${esc(sub)}</span><span>HP ${hp}/${mhp} &middot; MP ${mp}/${mmp}</span><span class="dim">${esc(extra)}</span></div>`;
+  let html = `<section><h3 class="tab">${iconHTML('crest')}Party</h3>${S.house ? crestHTML(S.house) : ''}${card(S.name, `${S.house ? HOUSES[S.house].name : 'Unsorted'} · Lv ${S.lv}`, S.hp, st.maxhp, S.mp, st.maxmp, rankOf(S.lv))}`;
+  html += `<div class="dim">ATK ${st.atk} · MAG ${st.mag} · DEF ${st.def} · SPD ${Math.round(st.spd)}</div>`;
+  if (S.mira) { const ms = miraStats(miraLv()); html += card('Mira Fenwick', `Tidewyrm · Lv ${miraLv()}`, S.mira.hp, ms.maxhp, S.mira.mp, ms.maxmp, 'Scholar'); }
+  if (S.familiar) html += `<div>Familiar: ${esc(FAMS[S.familiar].name)} <span class="dim">(${esc(FAMS[S.familiar].assist)}: ${esc(FAMS[S.familiar].desc)})</span></div>`;
+  html += `<div class="dim">${esc(toNext)}${nr ? ` · next rank ${esc(nr[1])} at Lv ${nr[0]}` : ''}</div></section>`;
+  html += `<section><h3 class="tab">${iconHTML('Attack')}Equipment</h3>${Object.entries(SLOTS).map(([k, l]) => { const g = GEAR[S.gear[k]]; return `<div>${g ? itemIcon(g.icon) : ''}<span class="dim">${l}:</span> ${g ? `${esc(g.name)} <span class="dim">${esc(gearText(g))}</span>` : '<span class="dim">empty</span>'}</div>`; }).join('')}</section>`;
+  const sp = heroSpells(S.lv, S.house);
+  html += `<section><h3 class="tab">${iconHTML('Magic')}Spells</h3>${sp.length ? `<div>${sp.map(k => iconHTML(spellIcon(k)) + esc(SPELLS[k].name)).join(' · ')}</div>` : '<div class="dim">None yet. Your spark is asleep.</div>'}</section>`;
+  html += `<section><h3 class="tab">${iconHTML('Item')}Satchel</h3><div>${iconHTML('tonic')}Moonleaf Tonic x${S.items.tonic} <span class="dim">(heals 50, revives)</span><br>${iconHTML('ether')}Ether Drop x${S.items.ether} <span class="dim">(restores 15 MP)</span></div></section>`;
+  html += `<section><h3 class="tab">${iconHTML('star')}Goals</h3><div>${esc(S.goal)}</div>${sideQuests().map(([d, t]) => `<div class="dim">${d ? '✓' : '○'} ${esc(t)}</div>`).join('')}</section>`;
+  html += `<section><h3 class="tab">${iconHTML('candle')}Recovered memories</h3>${S.memories.length ? `<ul>${S.memories.map(l => `<li>${esc(MEMORIES[l])}</li>`).join('')}</ul>` : '<div class="dim">Nothing yet. They return as your magic does.</div>'}</section>`;
+  return html;
+}
+async function equipMenu() {
+  while (true) {
+    const slots = Object.keys(SLOTS);
+    const i = await menu($('pausemenu'), slots.map(k => ({ label: `${SLOTS[k]}: ${GEAR[S.gear[k]] ? GEAR[S.gear[k]].name : 'empty'}`, item: GEAR[S.gear[k]] && GEAR[S.gear[k]].icon, icon: 'none' })).concat([{ label: 'Done', icon: 'Resume' }]));
+    if (i < 0 || i === slots.length) return;
+    const slot = slots[i];
+    const owned = S.bag.filter(id => GEAR[id].slot === slot);
+    const opts = owned.map(id => ({ label: GEAR[id].name, sub: gearText(GEAR[id]), item: GEAR[id].icon, id }));
+    if (slot === 'ring' || slot === 'charm') opts.push({ label: 'Take off', id: null });
+    const j = await menu($('pausemenu'), opts);
+    if (j < 0) continue;
+    S.gear[slot] = opts[j].id;
+    const st = heroEff(); S.hp = Math.min(S.hp, st.maxhp); S.mp = Math.min(S.mp, st.maxmp);
+    $('pausebody').innerHTML = pauseHTML();
+  }
+}
 function openPause() {
   run(async () => {
-    const st = heroStats(S.lv);
-    const nr = nextRank(S.lv);
-    const toNext = S.lv >= MAXLV ? 'Max level' : `${XP[S.lv + 1] - S.xp} XP to Lv ${S.lv + 1}`;
-    const card = (nm, sub, hp, mhp, mp, mmp, extra) => `<div class="pc"><span class="nm">${esc(nm)}</span><span class="dim">${esc(sub)}</span><span>HP ${hp}/${mhp} &middot; MP ${mp}/${mmp}</span><span class="dim">${esc(extra)}</span></div>`;
-    let html = `<section><h3 class="tab">${iconHTML('crest')}Party</h3>${S.house ? crestHTML(S.house) : ''}${card(S.name, `${S.house ? HOUSES[S.house].name : 'Unsorted'} \u00b7 Lv ${S.lv}`, S.hp, st.maxhp, S.mp, st.maxmp, rankOf(S.lv))}`;
-    if (S.mira) { const ms = miraStats(miraLv()); html += card('Mira Fenwick', `Tidewyrm \u00b7 Lv ${miraLv()}`, S.mira.hp, ms.maxhp, S.mira.mp, ms.maxmp, 'Scholar'); }
-    html += `<div class="dim">${esc(toNext)}${nr ? ` \u00b7 next rank ${esc(nr[1])} at Lv ${nr[0]}` : ''}</div></section>`;
-    const sp = heroSpells(S.lv, S.house);
-    html += `<section><h3 class="tab">${iconHTML('Magic')}Spells</h3>${sp.length ? `<div>${sp.map(k => iconHTML(spellIcon(k)) + esc(SPELLS[k].name)).join(' \u00b7 ')}</div>` : '<div class="dim">None yet. Your spark is asleep.</div>'}</section>`;
-    html += `<section><h3 class="tab">${iconHTML('Item')}Satchel</h3><div>${iconHTML('tonic')}Moonleaf Tonic x${S.items.tonic} <span class="dim">(heals 50, revives)</span><br>${iconHTML('ether')}Ether Drop x${S.items.ether} <span class="dim">(restores 15 MP)</span></div></section>`;
-    html += `<section><h3 class="tab">${iconHTML('candle')}Recovered memories</h3>${S.memories.length ? `<ul>${S.memories.map(l => `<li>${esc(MEMORIES[l])}</li>`).join('')}</ul>` : '<div class="dim">Nothing yet. They return as your magic does.</div>'}</section>`;
-    html += `<section><h3 class="tab">${iconHTML('star')}Goal</h3><div>${esc(S.goal)}</div></section>`;
-    $('pausebody').innerHTML = html;
+    $('pausebody').innerHTML = pauseHTML();
     $('pause').hidden = false;
     while (true) {
-      const i = await menu($('pausemenu'), [{ label: 'Resume' }, { label: 'Save game' }, { label: 'Quit to title' }]);
-      if (i === 1) { save(); toast('Game saved'); continue; }
+      const i = await menu($('pausemenu'), [{ label: 'Resume' }, { label: 'Equipment', icon: 'Attack' }, { label: 'Save game' }, { label: 'Quit to title' }]);
+      if (i === 1) { await equipMenu(); continue; }
+      if (i === 2) { save(); toast('Game saved'); continue; }
       $('pause').hidden = true;
-      if (i === 2) { save(); MAP = null; titleFlow(); }
+      if (i === 3) { save(); MAP = null; titleFlow(); }
       return;
     }
   });
@@ -1443,7 +1747,7 @@ function openPause() {
 const aliveFoes = () => B.foes.filter(f => f.hp > 0);
 const aliveParty = () => B.party.filter(p => p.hp > 0);
 function makeHero() {
-  const st = heroStats(S.lv);
+  const st = heroEff();
   return { id: 'hero', name: S.name, ...st, hp: Math.min(S.hp, st.maxhp), mp: Math.min(S.mp, st.maxmp), ally: true, spells: heroSpells(S.lv, S.house), atb: rnd(40, 75) };
 }
 function makeMira() {
@@ -1459,7 +1763,7 @@ function startBattle(keys, opts) {
     const fp = { 1: [[128, 118]], 2: [[112, 94], [152, 140]], 3: [[92, 88], [156, 108], [104, 148]] }[keys.length];
     const foes = keys.map((k, i) => ({ ...FOES[k], key: k, maxhp: FOES[k].hp, ally: false, atb: rnd(0, 45), bx: fp[i][0], by: fp[i][1] }));
     if (keys.length === 1 && FOES[keys[0]].art === 'warden') { foes[0].bx = 128; foes[0].by = 108; }
-    B = { party, foes, opts, res, queue: [], busy: false, menu: false, cursor: null, fx: [], t: 0, over: false, actor: null };
+    B = { party, foes, opts, res, queue: [], busy: false, menu: false, cursor: null, fx: [], t: 0, over: false, actor: null, famCount: 0 };
     mode = 'battle';
     buildPartyPanel();
     $('cmdtitle').textContent = ''; $('cmdlist').innerHTML = '';
@@ -1594,6 +1898,7 @@ async function commandFlow(a) {
   }
   a.atb = 0; a.haste = a.haste && Math.random() < .7;
   B.queue = B.queue.filter(x => x !== a);
+  if (a.id === 'hero' && S.familiar && B && !B.over && aliveFoes().length && ++B.famCount >= 3) { B.famCount = 0; await famAssist(); }
 }
 function pickTarget(cands) {
   return new Promise(res => {
@@ -1626,9 +1931,11 @@ const num = (c, text, color, dy = 0) => fx({ type: 'num', x: c.bx, y: c.by - 16 
 const ring = (c, color = '#dfe5df') => fx({ type: 'ring', x: c.bx, y: c.by, color, dur: .4 });
 const spark = (c, color) => fx({ type: 'spark', x: c.bx, y: c.by, color, dur: .8 });
 const proj = (a, t, color, elem) => fx({ type: 'proj', x0: a.bx, y0: a.by, x1: t.bx, y1: t.by, color, elem, dur: .35 });
+const ELEM_FX = { fire: 'Fire_Burst', water: 'Water_Splash', earth: 'Nature_Bloom', air: 'Wind_Slash', arcane: 'Arcane_Rune', light: 'Star_Shower', shadow: 'Dark_Pulse', time: 'Time_Stop' };
 function damage(t, d, tag, color = '#dfe5df', elem) {
   t.hp = Math.max(0, t.hp - d); t.flash = B.t;
-  fx({ type: 'burst', x: t.bx, y: t.by, color, elem, dur: .4 });
+  if (elem && ELEM_FX[elem] && packImg('fx', ELEM_FX[elem])) fx({ type: 'strip', name: ELEM_FX[elem], x: t.bx, y: t.by - 2, dur: .55 });
+  else fx({ type: 'burst', x: t.bx, y: t.by, color, elem, dur: .4 });
   num(t, d, '#ffffff');
   if (tag === 'weak') num(t, 'WEAK', '#f5a93a', -9);
   else if (tag === 'resist') num(t, 'RESIST', '#9aa3c8', -9);
@@ -1645,10 +1952,10 @@ async function doSpell(a, sp, tg) {
   await sleep(250);
   if (sp.heal) {
     const tgts = sp.tgt === 'allies' ? aliveParty() : [tg];
-    for (const t of tgts) { const amt = Math.round(sp.heal + a.mag * 1.2); t.hp = Math.min(t.maxhp, t.hp + amt); spark(t, ELEM_COLOR.heal); num(t, amt, ELEM_COLOR.heal); }
+    for (const t of tgts) { const amt = Math.round(sp.heal + a.mag * 1.2); t.hp = Math.min(t.maxhp, t.hp + amt); spark(t, ELEM_COLOR.heal); fx({ type: 'strip', name: 'Healing_Aura', x: t.bx, y: t.by - 4, dur: .6 }); num(t, amt, ELEM_COLOR.heal); }
     await sleep(650); return;
   }
-  if (sp.haste) { tg.haste = true; tg.atb = 100; spark(tg, ELEM_COLOR.time); num(tg, 'HASTE', ELEM_COLOR.time); await sleep(650); return; }
+  if (sp.haste) { tg.haste = true; tg.atb = 100; spark(tg, ELEM_COLOR.time); fx({ type: 'strip', name: 'Time_Stop', x: tg.bx, y: tg.by - 4, dur: .6 }); num(tg, 'HASTE', ELEM_COLOR.time); await sleep(650); return; }
   const tgts = sp.tgt === 'all' ? aliveFoes() : [tg];
   const col = ELEM_COLOR[sp.elem];
   tgts.forEach(t => proj(a, t, col, sp.elem));
@@ -1667,6 +1974,7 @@ async function doTech() {
   tgts.forEach(t => { proj(h, t, ELEM_COLOR[house.elem], house.elem); proj(m, t, ELEM_COLOR.water, 'water'); });
   await sleep(380);
   tgts.forEach(t => {
+    fx({ type: 'strip', name: 'Blazing_Sigil', x: t.bx, y: t.by - 2, dur: .7 });
     const v = Math.round((40 + (h.mag + m.mag) * 1.2 - t.def * .3) * rnd(.95, 1.05));
     damage(t, Math.max(1, v), '', '#f2e6c9', house.elem);
   });
@@ -1705,6 +2013,7 @@ async function fight(keys, opts = {}) {
   try {
     const out = await startBattle(keys, opts);
     if (out.r === 'win') await rewards(out.xp, out.drops);
+    else if (out.r === 'lose' && opts.duel) restoreParty(); // a lost duel is embarrassing, not dangerous
     else if (out.r === 'lose') await defeat();
     save();
     return out.r;
@@ -1717,7 +2026,7 @@ async function rewards(xp, drops) {
   S.items.tonic += drops.tonic; S.items.ether += drops.ether;
   await say(null, parts.join(' '));
   if (S.lv >= MAXLV) return;
-  S.xp += xp;
+  S.xp += Math.round(xp * (1 + xpBonus()));
   while (S.lv < MAXLV && S.xp >= XP[S.lv + 1]) {
     const before = heroSpells(S.lv, S.house), oldRank = rankOf(S.lv);
     S.lv++;
@@ -1792,6 +2101,7 @@ function drawFxSprite(f, p) {
 function renderFx() {
   for (const f of B.fx) {
     const p = Math.min(1, (B.t - f.t0) / f.dur);
+    if (f.type === 'strip') { const im = packImg('fx', f.name); if (im) ctx.drawImage(im, Math.min(7, Math.floor(p * 8)) * 48, 0, 48, 48, Math.round(f.x - 24), Math.round(f.y - 24), 48, 48); continue; }
     if ((f.type === 'proj' || f.type === 'burst') && drawFxSprite(f, p)) continue;
     if (f.type === 'proj') {
       const x = f.x0 + (f.x1 - f.x0) * p, y = f.y0 + (f.y1 - f.y0) * p - Math.sin(p * Math.PI) * 10;
@@ -1831,12 +2141,31 @@ function drawCombatant(c) {
     if (c.hp <= 0) { px(c.bx - 8, c.by + 2, 12, 5, look.robe); px(c.bx + 3, c.by + 1, 5, 5, look.skin); px(c.bx + 4, c.by, 5, 2, look.hair); }
     else if (!drawWalker(sheet, c.bx - 8 + ox, c.by + 5, 'left', c.atb >= 100 || lunging, B.t))
       drawPerson(c.bx - 8 + ox, c.by - 10, { ...look, dir: 'left', step: c.atb >= 100 ? ((B.t * 4) | 0) % 2 : 0 });
-  } else drawFoe(c.art, c.bx + ox, c.by, B.t, c.key === 'echo' ? .75 : 1, hurt ? 'hurt' : lunging ? 'attack' : 'idle');
+  } else if (c.walker && npcSheet(c.walker)) drawWalker(npcSheet(c.walker), c.bx - 8 + ox, c.by + 8, 'right', lunging, B.t, lunging);
+  else drawFoe(c.art, c.bx + ox, c.by, B.t, c.key === 'echo' ? .75 : 1, hurt ? 'hurt' : lunging ? 'attack' : 'idle');
   ctx.globalAlpha = 1;
+}
+const famPos = () => { const h = B.party.find(p => p.id === 'hero'); return { bx: h.bx + 22, by: h.by + 14 }; };
+async function famAssist() {
+  const f = FAMS[S.familiar], at = famPos();
+  banner(`${f.name}: ${f.assist}`, 1100);
+  fx({ type: 'strip', name: 'Familiar_Summon', x: at.bx, y: at.by - 4, dur: .6 });
+  await sleep(350);
+  const lv = S.lv;
+  if (S.familiar === 'cat') {
+    const t = pick(aliveFoes()); if (t) damage(t, Math.round((8 + lv * 6) * rnd(.9, 1.1)), '', '#6b46a8', 'shadow');
+  } else if (S.familiar === 'owl') {
+    aliveFoes().forEach(t => { const w = t.weak && t.weak.includes('air') ? 1.75 : t.resist && t.resist.includes('air') ? .5 : 1; damage(t, Math.max(1, Math.round((4 + lv * 3) * w)), w > 1 ? 'weak' : '', '#dfe5df', 'air'); });
+  } else if (S.familiar === 'rabbit') {
+    aliveParty().forEach(p => { const amt = Math.round(p.maxhp * .12 + 5); p.hp = Math.min(p.maxhp, p.hp + amt); fx({ type: 'strip', name: 'Healing_Aura', x: p.bx, y: p.by - 4, dur: .6 }); num(p, amt, ELEM_COLOR.heal); });
+  } else {
+    aliveParty().forEach(p => { const was = p.mp; p.mp = Math.min(p.maxmp, p.mp + 4 + lv); num(p, `+${p.mp - was} MP`, ELEM_COLOR.water); });
+  }
+  await sleep(650);
 }
 function drawCursor(c) {
   const bob = Math.sin(B.t * 8) * 1.5;
-  const top = c.ally ? c.by - 30 : c.by - (c.art === 'warden' ? (c.key === 'echo' ? 30 : 38) : 20);
+  const top = c.ally || c.walker ? c.by - 30 : c.by - (c.art === 'warden' ? (c.key === 'echo' ? 30 : 38) : foeScale(c) > 1 ? 34 : 20);
   fill('#e2b25a');
   ctx.beginPath(); ctx.moveTo(c.bx - 4, top - 6 + bob); ctx.lineTo(c.bx + 4, top - 6 + bob); ctx.lineTo(c.bx, top + bob); ctx.fill();
   if (!c.ally) { px(c.bx - 12, c.by + 18, 24, 3, '#0b0d18'); px(c.bx - 12, c.by + 18, 24 * c.hp / c.maxhp, 3, c.hp / c.maxhp > .35 ? '#2fb3a8' : '#d23f3a'); }
@@ -1853,11 +2182,21 @@ function render(t) {
   const y0 = Math.max(0, Math.floor(cy / TS)), y1 = Math.min(mapH(), Math.ceil((cy + H) / TS) + 1);
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) drawTile(x, y, t, bigs);
   bigs.forEach(f => f());
+  const props = mapProps();
+  props.filter(o => o.deco).forEach(o => drawProp(o, t));
   const ents = visibleNPCs().map(n => ({ y: n.y * TS, draw: () => drawNPC(n, t) }));
+  props.filter(o => !o.deco).forEach(o => ents.push({ y: o.y * TS, draw: () => drawProp(o, t) }));
   if (mode !== 'battle') {
     FIELD.forEach(f => { const [fx2, fy2] = fPos(f); ents.push({ y: fy2, draw: () => drawFoe(f.art, fx2 + 8, fy2 + 6, t, .5) }); });
     const [ppx, ppy] = pPos();
     ents.push({ y: ppy, draw: () => drawWalker(heroSheet(), ppx, ppy + 12, P.dir, P.moving, t) || drawPerson(ppx, ppy - 4, { ...heroLook(), dir: P.dir, step: P.moving ? P.step : 0 }) });
+    followers().forEach((f, i) => {
+      const a = P.hist[i + 1], b = P.hist[i], k = P.moving ? P.prog : 1;
+      const fx = (a[0] + (b[0] - a[0]) * k) * TS, fy = (a[1] + (b[1] - a[1]) * k) * TS;
+      if (Math.abs(fx - ppx) < 2 && Math.abs(fy - ppy) < 2) return; // still stacked on the player after a map change
+      const dir = b[2] || P.dir;
+      ents.push({ y: fy - .5, draw: () => f.draw(fx, fy, dir, P.moving, t) });
+    });
   }
   ents.sort((a, b) => a.y - b.y).forEach(e => e.draw());
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -1871,10 +2210,25 @@ function render(t) {
   if (mode === 'battle' && B) {
     ctx.fillStyle = 'rgba(8,8,28,.42)'; ctx.fillRect(0, 0, W, H);
     [...B.foes, ...B.party].sort((a, b) => a.by - b.by).forEach(drawCombatant);
+    if (S.familiar && B.party[0].hp > 0) { const at = famPos(); drawFamiliar(at.bx, at.by, B.t, 1); }
     if (B.cursor) drawCursor(B.cursor);
     renderFx();
     updatePartyPanel();
   }
+}
+
+function followers() {
+  const list = [];
+  if (S.mira && S.flags.mira) list.push({ draw: (x, y, dir, mv, t) => drawWalker(npcSheet('mira'), x, y + 12, dir, mv, t) || drawPerson(x, y - 4, { ...LOOKS.mira, dir }) });
+  if (S.familiar) list.push({ draw: (x, y, dir, mv, t) => drawFamiliar(x + 8, y + 10, t) });
+  return list;
+}
+function drawFamiliar(cx, cy, t, scale = 1) {
+  const im = S.familiar && packImg('fam', FAMS[S.familiar].sprite);
+  if (!im) return;
+  const d = 16 * scale, bob = Math.sin(t * 5) * 1.2;
+  px(cx - 5 * scale, cy + 5 * scale, 10 * scale, 2, 'rgba(0,0,0,.28)');
+  ctx.drawImage(im, (Math.floor(t * 8) % 8) * 32, 0, 32, 32, Math.round(cx - d / 2), Math.round(cy - d + 6 * scale + bob), d, d);
 }
 
 // ---------------------------------------------------------------- flow
@@ -1919,7 +2273,7 @@ async function titleFlow() {
   $('title').hidden = false; $('dialog').hidden = true; $('battle').hidden = true; $('fade').classList.remove('on');
   const saved = loadSave();
   const i = await menu($('titlemenu'), [{ label: 'Begin your first day' }, { label: 'Continue', dis: !saved }], { start: saved ? 1 : 0, noCancel: true });
-  if (i === 1 && saved) { S = saved; $('title').hidden = true; await enterMap(S.map, S.x, S.y, S.dir); }
+  if (i === 1 && saved) { S = migrate(saved); $('title').hidden = true; await enterMap(S.map, S.x, S.y, S.dir); }
   else await newGame();
 }
 
@@ -1939,7 +2293,7 @@ if (hot && typeof hot.snapshot === 'function') hot.snapshot(() => (S && mode ===
 function boot(data) {
   requestAnimationFrame(loop);
   if (data && data.save) {
-    try { const s = JSON.parse(data.save); if (s.v === 2) { S = s; $('title').hidden = true; enterMap(S.map, S.x, S.y, S.dir); return; } } catch (e) { /* fall through to title */ }
+    try { const s = JSON.parse(data.save); if (s.v === 2) { S = migrate(s); $('title').hidden = true; enterMap(S.map, S.x, S.y, S.dir); return; } } catch (e) { /* fall through to title */ }
   }
   titleFlow();
 }

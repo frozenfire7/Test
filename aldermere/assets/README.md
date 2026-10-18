@@ -40,3 +40,18 @@ To clean up a single ChatGPT sheet before adding it, run `python3 ../tools/proce
 | 4 | Seal door, closed | Seal door, open | Archive floor | Archive wall | (unused) | (unused) |
 
 \* Drawn on a transparent background. The game places grass, floor or path underneath.
+
+## Magic Academy Art Pack (`pack/`)
+
+A curated subset of the "Magic Academy Art Pack, Part 1" (see `pack/PACK_README.md`). These are native 1x pixel art, drawn at half size on the 2x canvas so each pixel lands exactly.
+
+| Files | Layout | Used for |
+|---|---|---|
+| `char_<Name>.png` | 10 cols × 4 rows of 32×48 (idle 0–1, walk 2–5, cast 6–9) | NPCs on the field, the rival in battle, portrait fallbacks (mapping in `NPC_CHAR`) |
+| `foe_<Name>.png` | 6 frames of 48×48 (idle 0–3, attack 4–5) | Enemies (mapping and battle scale in `FOE_PACK`) |
+| `fam_<Name>.png` | 8 frames of 32×32 | Familiars following the party and in battle |
+| `fx_<Name>.png` | 8 frames of 48×48 | Spell impacts, heals, haste, Tech and familiar summons |
+| `prop_<Name>.png` | 64×64 transparent | Chests, dorm furniture, banners, the wishing well and the arena glyph |
+| `items24.png` | 8 × 8 grid of 24×24 icons (order in `ITEM_ICONS`) | Equipment icons |
+
+The pack's concept atlases were used as design reference only: they are illustrations, not sliced sprites.
