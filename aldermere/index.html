@@ -1,0 +1,1555 @@
+<title>Aldermere Academy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Pixelify+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: one centered game stage (320x224 canvas, pixel-scaled) with time-travel-era blue windows overlaid; touch pad below on phones.
+   Single deliberate night palette: the academy after dark, ivory-edged windows, candle gold. */
+:root {
+  --night: #0c0d1e;
+  --ink: #ece6d3;
+  --win-top: #3341a6;
+  --win-bot: #131a5c;
+  --edge: #efe5c8;
+  --gold: #e6c36c;
+  --dim: #9ca2cc;
+  --hp: #86e39a;
+  --mp: #86bfff;
+  --atb: #f0d35e;
+  --danger: #ff8270;
+  --memory-top: #3d2b60;
+  --memory-bot: #170f30;
+  --ui: 'Pixelify Sans', 'Courier New', monospace;
+  --display: 'Cinzel Decorative', 'Palatino Linotype', Georgia, serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html { height: 100%; background: var(--night); font-variant-ligatures: none; font-feature-settings: "liga" 0, "clig" 0; }
+body {
+  margin: 0; min-height: 100%; box-sizing: border-box;
+  background: var(--night); color: var(--ink); font-family: var(--ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+#stage {
+  position: relative; width: min(100%, 960px, calc((100vh - 64px) * 320 / 224));
+  aspect-ratio: 320 / 224; max-width: 100%;
+  container-type: inline-size; background: #000;
+  border: 2px solid #272c5c; border-radius: 6px; overflow: hidden;
+  user-select: none; -webkit-user-select: none; touch-action: none;
+}
+canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+.ov { position: absolute; }
+.win {
+  background: linear-gradient(180deg, var(--win-top), var(--win-bot));
+  border: 2px solid var(--edge); border-radius: 5px;
+  box-shadow: 0 0 0 2px #0a0d33, inset 0 0 0 1px rgba(255,255,255,.14);
+  color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,.6);
+}
+.opt { position: relative; display: flex; justify-content: space-between; gap: 1em; padding: .1em .35em .1em 1.25em; border-radius: 3px; cursor: pointer; }
+.opt.sel { background: rgba(255,255,255,.12); }
+.opt.sel::before { content: '\25B8'; position: absolute; left: .3em; color: var(--gold); }
+.opt.dis { opacity: .42; cursor: default; }
+.opt .sub { color: var(--mp); font-variant-numeric: tabular-nums; }
+
+#fade { inset: 0; background: #000; opacity: 0; transition: opacity .4s; pointer-events: none; }
+#fade.on { opacity: 1; }
+
+#goal {
+  top: 2%; left: 2%; max-width: 58%; padding: .35em .7em; font-size: clamp(10px, 1.9cqw, 16px); line-height: 1.3;
+  background: rgba(14, 18, 66, .82); border-width: 1px; display: flex; flex-direction: column; gap: .1em;
+}
+#goal b { color: var(--gold); font-weight: 600; letter-spacing: .04em; }
+#toast {
+  top: 14%; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  font-family: var(--display); font-size: clamp(15px, 3.8cqw, 34px); color: var(--gold);
+  text-shadow: 0 2px 0 #000, 0 0 12px rgba(0,0,0,.8); opacity: 0; transition: opacity .6s;
+}
+#toast.on { opacity: 1; }
+#banner { top: 3%; left: 50%; transform: translateX(-50%); padding: .2em 1.1em; font-size: clamp(12px, 2.6cqw, 22px); white-space: nowrap; }
+
+#battle {
+  left: 1.5%; right: 1.5%; bottom: 2%; max-height: 42%;
+  display: grid; grid-template-columns: minmax(0, 34%) minmax(0, 1fr); gap: 1cqw;
+  font-size: clamp(11px, 2.3cqw, 20px); line-height: 1.3;
+}
+#cmds { padding: .45em .5em; overflow: auto; min-width: 0; }
+#cmdtitle { color: var(--gold); font-size: .85em; margin: 0 0 .15em .3em; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#party { padding: .45em .7em; display: flex; flex-direction: column; justify-content: center; gap: .4em; min-width: 0; }
+.prow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto 22%; gap: .8em; align-items: center; font-variant-numeric: tabular-nums; }
+.prow .pn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prow .lbl { color: var(--dim); font-size: .8em; margin-right: .25em; }
+.prow.active .pn { color: var(--gold); }
+.prow.ko { color: var(--danger); }
+.atb { height: .55em; background: #0a0d33; border: 1px solid #c9c9e2; border-radius: 2px; overflow: hidden; }
+.atb i { display: block; height: 100%; width: 0; background: var(--atb); }
+.prow.ready .atb i { background: #fff7c8; box-shadow: 0 0 6px #fff; }
+
+#dialog {
+  left: 2%; right: 2%; bottom: 3%; min-height: 24%; box-sizing: border-box;
+  padding: 1.8cqw 2.6cqw 2.2cqw; font-size: clamp(12px, 2.7cqw, 24px); line-height: 1.38; cursor: pointer;
+}
+#dialog.memory { background: linear-gradient(180deg, var(--memory-top), var(--memory-bot)); font-style: italic; }
+#dialog.memory #who { color: #d9c4ff; }
+#who { color: var(--gold); font-weight: 600; margin-bottom: .2em; letter-spacing: .03em; font-style: normal; }
+#say { max-width: 70ch; }
+#choices { margin-top: .4em; }
+#more { position: absolute; right: 1.6cqw; bottom: .8cqw; color: var(--gold); animation: bob .8s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(3px); } }
+
+#title { inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 7cqw; gap: 1.2cqw; text-align: center; }
+#title h1 {
+  margin: 0; font-family: var(--display); font-size: clamp(28px, 8.4cqw, 80px); line-height: 1; color: var(--gold);
+  letter-spacing: .03em; text-wrap: balance; text-shadow: 0 3px 0 #2e2108, 0 0 22px rgba(230,195,108,.35);
+}
+#title .sub { font-size: clamp(11px, 2.5cqw, 22px); letter-spacing: .32em; text-transform: uppercase; color: var(--ink); }
+#titlebox { margin-top: 1.8cqw; padding: .6em .9em; min-width: 38cqw; font-size: clamp(12px, 2.6cqw, 22px); text-align: left; }
+
+#namebox { inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(4,5,18,.55); }
+#nameform { width: min(88%, 520px); padding: 2cqw 3cqw; display: flex; flex-direction: column; gap: 1.2cqw; font-size: clamp(13px, 2.6cqw, 22px); }
+#nameform label { line-height: 1.35; }
+#nameinput { font: inherit; background: #0a0d33; color: #fff; border: 2px solid var(--edge); border-radius: 3px; padding: .3em .5em; }
+#nameinput:focus-visible, button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.act { align-self: flex-end; font: inherit; font-weight: 600; background: var(--gold); color: #1b1432; border: 0; border-radius: 3px; padding: .35em 1em; cursor: pointer; }
+
+#pause { inset: 3%; padding: 1.6cqw 2cqw; overflow: auto; font-size: clamp(11px, 2.1cqw, 18px); line-height: 1.35; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2cqw; align-items: start; }
+#pause h3 { margin: 0 0 .25em; font-size: .85em; color: var(--gold); letter-spacing: .12em; text-transform: uppercase; font-weight: 600; }
+#pause section { margin-bottom: .9em; }
+#pause .pc { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0 1em; margin-bottom: .5em; font-variant-numeric: tabular-nums; }
+#pause .pc .nm { color: #fff; font-weight: 600; }
+#pause .pc .dim, #pause .dim { color: var(--dim); }
+#pause ul { margin: 0; padding-left: 1.1em; }
+#pause li { margin-bottom: .25em; }
+#pausemenu { min-width: 9em; position: sticky; top: 0; }
+@container (max-width: 540px) { #pause { grid-template-columns: 1fr; } #pausemenu { position: static; order: -1; } }
+
+#card { inset: 0; background: rgba(4,4,14,.9); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2cqw; text-align: center; padding: 4cqw; }
+#card h2 { margin: 0; font-family: var(--display); color: var(--gold); font-size: clamp(22px, 6cqw, 56px); text-wrap: balance; }
+#card p { margin: 0; max-width: 52ch; font-size: clamp(12px, 2.4cqw, 20px); line-height: 1.45; }
+#cardmenu { padding: .4em .8em; font-size: clamp(12px, 2.4cqw, 20px); margin-top: 1cqw; }
+
+#pad { width: min(100%, 520px); display: flex; justify-content: space-between; align-items: center; gap: 16px; touch-action: none; user-select: none; -webkit-user-select: none; }
+#pad button { font: 600 16px var(--ui); color: #fff; background: linear-gradient(180deg, #2c3896, #151b5e); border: 2px solid var(--edge); border-radius: 10px; touch-action: none; }
+#pad button:active, #pad button.down { background: #3d4cc0; }
+.dpad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 4px; }
+.dpad [data-a="up"] { grid-area: 1 / 2; } .dpad [data-a="left"] { grid-area: 2 / 1; }
+.dpad [data-a="right"] { grid-area: 2 / 3; } .dpad [data-a="down"] { grid-area: 3 / 2; }
+.abtns { display: flex; align-items: center; gap: 10px; }
+.abtns [data-a="ok"], .abtns [data-a="cancel"] { width: 60px; height: 60px; border-radius: 50%; }
+.abtns [data-a="ok"] { background: linear-gradient(180deg, #b8892e, #7a5414); }
+.abtns [data-a="menu"] { padding: 8px 12px; font-size: 13px; }
+#help { color: var(--dim); font-size: 13px; text-align: center; max-width: 70ch; line-height: 1.5; }
+#help kbd { font-family: var(--ui); color: var(--ink); border: 1px solid #3a3f70; border-radius: 3px; padding: 0 .35em; }
+@media (hover: hover) and (pointer: fine) { #pad { display: none; } }
+@media (hover: none), (pointer: coarse) { #help { display: none; } }
+@media (prefers-reduced-motion: reduce) { #more { animation: none; } #fade, #toast { transition: none; } }
+</style>
+
+<div id="stage">
+  <canvas id="cv" width="320" height="224"></canvas>
+  <div id="fade" class="ov"></div>
+  <div id="goal" class="ov win" hidden></div>
+  <div id="toast" class="ov"></div>
+  <div id="banner" class="ov win" hidden></div>
+  <div id="battle" class="ov" hidden>
+    <div id="cmds" class="win"><div id="cmdtitle"></div><div id="cmdlist"></div></div>
+    <div id="party" class="win"></div>
+  </div>
+  <div id="dialog" class="ov win" hidden>
+    <div id="who"></div>
+    <div id="say"></div>
+    <div id="choices"></div>
+    <div id="more" hidden>&#9660;</div>
+  </div>
+  <div id="pause" class="ov win" hidden><div id="pausebody"></div><div id="pausemenu"></div></div>
+  <div id="card" class="ov" hidden><h2 id="cardtitle"></h2><div id="cardtext"></div><div id="cardmenu" class="win"></div></div>
+  <div id="namebox" class="ov" hidden>
+    <form id="nameform" class="win" autocomplete="off">
+      <label for="nameinput">Your name is the only thing you remember. What is it?</label>
+      <input id="nameinput" maxlength="12" placeholder="Rowan" spellcheck="false">
+      <button class="act" type="submit">Wake up</button>
+    </form>
+  </div>
+  <div id="title" class="ov">
+    <h1>Aldermere</h1>
+    <div class="sub">The Unwritten Student</div>
+    <div id="titlebox" class="win"><div id="titlemenu"></div></div>
+  </div>
+</div>
+
+<div id="pad" aria-label="Touch controls">
+  <div class="dpad">
+    <button data-a="up" aria-label="Up">&#9650;</button>
+    <button data-a="left" aria-label="Left">&#9664;</button>
+    <button data-a="right" aria-label="Right">&#9654;</button>
+    <button data-a="down" aria-label="Down">&#9660;</button>
+  </div>
+  <div class="abtns">
+    <button data-a="menu">Menu</button>
+    <button data-a="cancel" aria-label="Back">B</button>
+    <button data-a="ok" aria-label="Confirm">A</button>
+  </div>
+</div>
+<p id="help"><kbd>Arrows</kbd>/<kbd>WASD</kbd> move &middot; <kbd>Z</kbd>/<kbd>Enter</kbd> talk and confirm &middot; <kbd>X</kbd>/<kbd>Esc</kbd> back and open the menu. Battle gauges pause while you choose a command.</p>
+
+<script>
+(() => {
+'use strict';
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const W = 320, H = 224, TS = 16;
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------------------------------------------------------------- data
+const HOUSES = {
+  ember: { name: 'Emberhold', color: '#d4553a', elem: 'fire', motto: 'Courage that burns', spells: ['ember', 'fireball'], tech: 'Steam Burst' },
+  tide:  { name: 'Tidewyrm',  color: '#3a86d4', elem: 'water', motto: 'Wisdom runs deep', spells: ['lash', 'maelstrom'], tech: 'Twin Tides' },
+  thorn: { name: 'Thornveil', color: '#5aa64a', elem: 'earth', motto: 'Roots hold fast', spells: ['thorn', 'quake'], tech: 'Bloom Surge' },
+  gale:  { name: 'Galecrest', color: '#a07ae0', elem: 'air', motto: 'Rise past the sky', spells: ['gust', 'tempest'], tech: 'Storm Squall' },
+};
+const HOUSE_ORDER = ['ember', 'tide', 'thorn', 'gale'];
+const ELEM_COLOR = { fire: '#ff8a3a', water: '#5ab8ff', earth: '#9ad05a', air: '#dcd0ff', arcane: '#e2a8ff', light: '#fff2a0', shadow: '#9a6ad8', heal: '#8affb0', time: '#ffe08a' };
+const SPELLS = {
+  ember:     { name: 'Ember', mp: 2, pow: 14, elem: 'fire', tgt: 'one' },
+  lash:      { name: 'Tidal Lash', mp: 2, pow: 14, elem: 'water', tgt: 'one' },
+  thorn:     { name: 'Thornwhip', mp: 2, pow: 14, elem: 'earth', tgt: 'one' },
+  gust:      { name: 'Gust Blade', mp: 2, pow: 14, elem: 'air', tgt: 'one' },
+  mend:      { name: 'Mend', mp: 3, heal: 34, tgt: 'ally' },
+  bolt:      { name: 'Arcane Bolt', mp: 4, pow: 28, elem: 'arcane', tgt: 'one' },
+  fireball:  { name: 'Fireball', mp: 7, pow: 24, elem: 'fire', tgt: 'all' },
+  maelstrom: { name: 'Maelstrom', mp: 7, pow: 24, elem: 'water', tgt: 'all' },
+  quake:     { name: 'Rootquake', mp: 7, pow: 24, elem: 'earth', tgt: 'all' },
+  tempest:   { name: 'Tempest', mp: 7, pow: 24, elem: 'air', tgt: 'all' },
+  radiance:  { name: 'Radiance', mp: 10, pow: 52, elem: 'light', tgt: 'one' },
+  chrono:    { name: 'Chronoslip', mp: 8, tgt: 'other', haste: true },
+  greatmend: { name: 'Great Mend', mp: 12, heal: 70, tgt: 'allies' },
+  horizon:   { name: 'Event Horizon', mp: 24, pow: 95, elem: 'arcane', tgt: 'all' },
+};
+const RANKS = [[1, 'Unawakened'], [2, 'Initiate'], [4, 'Apprentice'], [5, 'Adept'], [7, 'Magus'], [9, 'Archmage'], [12, 'Archwizard']];
+const XP = [0, 0, 30, 80, 150, 250, 380, 550, 750, 1000, 1300, 1650, 2050]; // total XP to reach level n
+const MAXLV = 12;
+const MEMORIES = {
+  2: 'A word rises out of the dark, warm as a coal. The first spell you ever learned. You have learned it before.',
+  4: 'A clocktower that is on no map of Aldermere. Its hands run backwards. You used to climb it to think.',
+  5: 'Your own voice, older and tired: "If this works, you will arrive with nothing. Not even your name. Do it anyway."',
+  7: 'Wax and starlight. Your palm pressing a seal into a door, and a hooded giant bowing low. "I will keep it until you return."',
+  9: 'A battlefield where every second has frozen solid. A woman with red hair and a Tidewyrm scarf stands in the last one. You did not reach her in time.',
+  12: 'Everything returns at once. You were Archwizard of Aldermere. You failed to stop the Hour of Stopped Clocks. So you came back, with nothing, to choose differently.',
+};
+const rankOf = lv => { let r = RANKS[0][1]; for (const [l, n] of RANKS) if (lv >= l) r = n; return r; };
+const nextRank = lv => RANKS.find(([l]) => l > lv);
+function heroSpells(lv, house) {
+  const h = HOUSES[house || 'ember'], s = [];
+  if (lv >= 2) s.push(h.spells[0]);
+  if (lv >= 3) s.push('mend');
+  if (lv >= 4) s.push('bolt');
+  if (lv >= 5) s.push(h.spells[1]);
+  if (lv >= 7) s.push('radiance');
+  if (lv >= 9) s.push('chrono');
+  if (lv >= 10) s.push('greatmend');
+  if (lv >= 12) s.push('horizon');
+  return s;
+}
+const miraSpells = lv => ['lash', 'mend', ...(lv >= 5 ? ['maelstrom'] : []), ...(lv >= 9 ? ['greatmend'] : [])];
+const heroStats = lv => ({ maxhp: 42 + 11 * (lv - 1), maxmp: lv === 1 ? 0 : 8 + 5 * (lv - 1), atk: 6 + 2 * (lv - 1), mag: Math.round(3 + 3.4 * (lv - 1)), def: Math.round(3 + 1.5 * (lv - 1)), spd: 8 + .4 * (lv - 1) });
+const miraStats = lv => ({ maxhp: 38 + 9 * (lv - 1), maxmp: 14 + 5 * (lv - 1), atk: Math.round(4 + 1.5 * (lv - 1)), mag: Math.round(7 + 3 * (lv - 1)), def: Math.round(3 + 1.2 * (lv - 1)), spd: 9.5 + .3 * (lv - 1) });
+const miraLv = () => Math.max(3, S.lv);
+
+const FOES = {
+  dummy:    { name: 'Training Dummy', hp: 30, atk: 3, mag: 0, def: 1, spd: 5, xp: 32, art: 'dummy', acts: ['hit'] },
+  inkimp:   { name: 'Inkimp', hp: 30, atk: 8, mag: 5, def: 2, spd: 11, xp: 20, weak: ['water', 'fire'], art: 'imp', acts: ['hit', 'hit', 'spell'], elem: 'shadow', spellName: 'Ink Splat' },
+  broom:    { name: 'Unruly Broom', hp: 42, atk: 10, mag: 0, def: 3, spd: 14, xp: 26, weak: ['fire'], art: 'broom', acts: ['hit'] },
+  wisp:     { name: 'Gloom Wisp', hp: 36, atk: 4, mag: 10, def: 2, spd: 9, xp: 28, weak: ['light', 'fire'], resist: ['air'], art: 'wisp', acts: ['spell'], elem: 'shadow', spellName: 'Gloom Bolt' },
+  toad:     { name: 'Bog Toad', hp: 62, atk: 12, mag: 7, def: 5, spd: 6, xp: 40, weak: ['air'], resist: ['water'], art: 'toad', acts: ['hit', 'hit', 'all'], elem: 'water', allName: 'Mud Wave' },
+  gargoyle: { name: 'Gargoyle Sentry', hp: 120, atk: 19, mag: 0, def: 12, spd: 7, xp: 90, weak: ['air', 'water'], resist: ['fire', 'earth'], art: 'gargoyle', acts: ['hit'] },
+  shade:    { name: 'Shade Scholar', hp: 88, atk: 8, mag: 17, def: 6, spd: 11, xp: 85, weak: ['light', 'fire'], art: 'shade', acts: ['spell', 'spell', 'all'], elem: 'shadow', spellName: 'Dark Verse', allName: 'Forbidden Chorus' },
+  warden:   { name: 'The Hollow Warden', hp: 820, atk: 22, mag: 24, def: 10, spd: 10, xp: 600, weak: ['light'], art: 'warden', acts: ['hit', 'spell', 'all', 'all'], elem: 'time', spellName: 'Unwind', allName: 'Clockstorm', boss: true },
+  echo:     { name: 'Warden Echo', hp: 340, atk: 28, mag: 30, def: 14, spd: 12, xp: 360, weak: ['light'], art: 'warden', acts: ['hit', 'spell', 'all'], elem: 'time', spellName: 'Unwind', allName: 'Clockstorm' },
+};
+
+// ---------------------------------------------------------------- maps (20 x 14 tiles)
+const MAPS = {
+  courtyard: {
+    name: 'Aldermere Courtyard',
+    rows: [
+      '#####w###dd###w#####',
+      'T,,,,,,,,pp,,,,,,,,T',
+      'T,,T,,,,,pp,,,,,T,,T',
+      'T,,,,,,,,pp,,,,,,,,T',
+      'T,,,,,,pppppp,,,,,,T',
+      'T,,,,,,ppffpp,,,,,,T',
+      'T,,,,,,ppffpp,,,,,,T',
+      'pppppppppppppppppppp',
+      'T,,,,,,pppppp,,,,,,T',
+      'T,,,,,,,,pp,,,,,,,,T',
+      'T,,T,,,,,pp,,,,,T,,T',
+      'T,,,,,,,,pp,,,,,,,,T',
+      'T,,,,,,,,pp,,,,,,,,T',
+      'TTTTTTTTTTTTTTTTTTTT',
+    ],
+    exits: [
+      { x: 9, y: 0, to: 'hall', tx: 9, ty: 12 }, { x: 10, y: 0, to: 'hall', tx: 10, ty: 12 },
+      { x: 0, y: 7, to: 'library', tx: 18, ty: 7 }, { x: 19, y: 7, to: 'grounds', tx: 1, ty: 7 },
+    ],
+  },
+  hall: {
+    name: 'The Great Hall',
+    rows: [
+      '####w####ww####w####',
+      '#c................c#',
+      '#.......====.......#',
+      '#........==........#',
+      '#........==........#',
+      '#..ttttt.==.ttttt..#',
+      '#........==........#',
+      '#........==........#',
+      '#..ttttt.==.ttttt..#',
+      '#........==........#',
+      '#c.......==.......c#',
+      '#........==........#',
+      '#........==........#',
+      '#########dd#########',
+    ],
+    exits: [{ x: 9, y: 13, to: 'courtyard', tx: 9, ty: 1 }, { x: 10, y: 13, to: 'courtyard', tx: 10, ty: 1 }],
+    onEnter: async () => {
+      if (!S.flags.sorted && !S.flags.hallSeen) {
+        S.flags.hallSeen = true;
+        await say('Headmistress Thorne', 'You there, at the back. Come forward, please. Yes, you. Up to the dais.');
+      }
+    },
+  },
+  library: {
+    name: 'The Library',
+    rows: [
+      '#########gg#########',
+      '#BBBBBBB....BBBBBBB#',
+      '#..................#',
+      '#.BBBB.BBBB.BBBB...#',
+      '#..................#',
+      '#.BBBB.BBBB.BBBB...#',
+      '#..................#',
+      '#...................',
+      '#..tt..........tt..#',
+      '#..tt..........tt..#',
+      '#..................#',
+      '#.BBBB.BBBB.BBBB...#',
+      '#c................c#',
+      '####################',
+    ],
+    exits: [
+      { x: 19, y: 7, to: 'courtyard', tx: 1, ty: 7 },
+      { x: 9, y: 0, to: 'archive', tx: 9, ty: 12, cond: () => S.flags.archiveOpen },
+      { x: 10, y: 0, to: 'archive', tx: 10, ty: 12, cond: () => S.flags.archiveOpen },
+    ],
+  },
+  grounds: {
+    name: 'Training Grounds',
+    rows: [
+      'TTTTTTTTTTTTTTTTTTTT',
+      'T,,,,,,,,,,,,,,,,,,T',
+      'T,,,pppppppppppp,,,T',
+      'T,,,p..........p,,,T',
+      'T,,,p..........p,,,T',
+      'T,,,p..........p,,,T',
+      'T,,,pppppppppppp,,,T',
+      'pppp,,,,,,,,,,,,,,,T',
+      'T,,,,,,,,,,,,,,,,,,T',
+      'T,,T,,,,,~~~~,,,,,,T',
+      'T,,,,,,,,~~~~,,,T,,T',
+      'T,,,,,,,,,,,,,,,,,,T',
+      'T,,,,,T,,,,,,,,,,,,T',
+      'TTTTTTTTTTTTTTTTTTTT',
+    ],
+    exits: [{ x: 0, y: 7, to: 'courtyard', tx: 18, ty: 7 }],
+    foes: () => S.flags.trained ? {
+      spots: [[5, 9], [15, 11], [8, 12], [16, 8]],
+      groups: [['broom'], ['wisp', 'inkimp'], ['toad'], ['broom', 'wisp'], ['inkimp', 'inkimp']],
+    } : null,
+  },
+  archive: {
+    name: 'The Forbidden Archive',
+    dark: true,
+    rows: [
+      'XXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXxxxxxxXXXXXXX',
+      'XXXXXXcxxxxxxcXXXXXX',
+      'XXXXXXXxxxxxxXXXXXXX',
+      'XXXXXXXXXxxXXXXXXXXX',
+      'XxxxxxxxxxxxxxxxxxxX',
+      'XxBBxxxxxxxxxxxxBBxX',
+      'XxxxxXXXxxxxXXXxxxxX',
+      'XxxxxXxxxxxxxxXxxxxX',
+      'XxBBxxxxxxxxxxxxBBxX',
+      'XxxxxxxxXxxXxxxxxxxX',
+      'XcxxxxxxxxxxxxxxxxcX',
+      'XxxxxxxxxxxxxxxxxxxX',
+      'XXXXXXXXXddXXXXXXXXX',
+    ],
+    exits: [{ x: 9, y: 13, to: 'library', tx: 9, ty: 1 }, { x: 10, y: 13, to: 'library', tx: 10, ty: 1 }],
+    foes: () => ({
+      spots: [[3, 8], [16, 10], [10, 8], [6, 5]],
+      groups: [['gargoyle'], ['shade', 'wisp'], ['shade'], ['gargoyle', 'wisp']],
+    }),
+  },
+};
+for (const [id, m] of Object.entries(MAPS)) m.rows.forEach((r, i) => { if (r.length !== 20) console.warn('map row length', id, i, r.length); });
+
+const SOLID = new Set(['#', 'w', 'T', '~', 'f', 'B', 't', 'c', 'X', 'g']);
+const LOOKS = {
+  aldous: { robe: '#3a2a20', trim: '#d2a84a', hair: '#d8b060', skin: '#efc8a2' },
+  pell: { robe: '#25382a', trim: '#5aa64a', hair: '#1a1410', skin: '#a87250' },
+  thorne: { robe: '#4a2858', trim: '#e6c36c', hair: '#c8c8d8', skin: '#efd2b8', hat: '#2e1838' },
+  juniper: { robe: '#3a2240', trim: '#a07ae0', hair: '#2a1a12', skin: '#c89070' },
+  tobias: { robe: '#3a201c', trim: '#d4553a', hair: '#e0c070', skin: '#f0caa8' },
+  quillon: { robe: '#24464a', trim: '#9ad0c8', hair: '#6a6a7a', skin: '#d8b090', hat: '#1a3034' },
+  brannoch: { robe: '#5a3e24', trim: '#c08a3a', hair: '#8a3a1a', skin: '#e0a880' },
+  mira: { robe: '#283a62', trim: '#3a86d4', hair: '#b4502a', skin: '#f3d0b0' },
+};
+const heroLook = () => ({ robe: '#2a2c48', trim: S && S.house ? HOUSES[S.house].color : '#8a8aa0', hair: '#2b1d14', skin: '#efc8a2' });
+
+// ---------------------------------------------------------------- state
+let S = null;          // persistent save state
+let MAP = null, MAPID = null, P = null, FIELD = [];
+let mode = 'title';    // title | explore | battle
+let lock = 0;          // >0 freezes the field
+let grace = 0;
+let B = null;          // active battle
+const handlers = [];   // input focus stack for menus and dialog
+const push = h => handlers.push(h);
+const pop = h => { const i = handlers.lastIndexOf(h); if (i >= 0) handlers.splice(i, 1); };
+
+function newState(name) {
+  return { v: 1, name, lv: 1, xp: 0, hp: 42, mp: 0, house: null, flags: {}, items: { tonic: 2, ether: 0 }, memories: [],
+    map: 'courtyard', x: 9, y: 9, dir: 'up', goal: 'Find orientation in the Great Hall (north doors).', mira: null };
+}
+const SAVE_KEY = 'aldermere-save-v1';
+function save() { if (!S) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
+function loadSave() { try { const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+function restoreParty() {
+  const st = heroStats(S.lv); S.hp = st.maxhp; S.mp = st.maxmp;
+  if (S.mira) { const ms = miraStats(miraLv()); S.mira.hp = ms.maxhp; S.mira.mp = ms.maxmp; }
+}
+function setGoal(g) { S.goal = g; }
+
+// ---------------------------------------------------------------- input
+const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
+  KeyZ: 'ok', Enter: 'ok', Space: 'ok', KeyX: 'cancel', Escape: 'cancel', Backspace: 'cancel', KeyM: 'menu' };
+const DIRS = ['up', 'down', 'left', 'right'];
+const dirStack = [];
+function emit(a) {
+  if (handlers.length) { handlers[handlers.length - 1](a); return; }
+  if (mode === 'explore' && lock === 0) exploreAction(a);
+}
+addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'INPUT') return;
+  const a = KEYMAP[e.code]; if (!a) return;
+  e.preventDefault();
+  if (DIRS.includes(a)) { if (!dirStack.includes(a)) dirStack.push(a); emit(a); }
+  else if (!e.repeat) emit(a);
+});
+addEventListener('keyup', e => { const a = KEYMAP[e.code]; if (a && DIRS.includes(a)) { const i = dirStack.indexOf(a); if (i >= 0) dirStack.splice(i, 1); } });
+addEventListener('blur', () => { dirStack.length = 0; });
+document.querySelectorAll('#pad button').forEach(b => {
+  const a = b.dataset.a;
+  const up = () => { b.classList.remove('down'); const i = dirStack.indexOf(a); if (i >= 0) dirStack.splice(i, 1); };
+  b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('down'); if (DIRS.includes(a) && !dirStack.includes(a)) dirStack.push(a); emit(a); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, up));
+  b.addEventListener('contextmenu', e => e.preventDefault());
+});
+$('nameform').addEventListener('submit', e => e.preventDefault());
+let canvasPick = null;
+cv.addEventListener('pointerdown', e => {
+  if (!canvasPick) return;
+  const r = cv.getBoundingClientRect();
+  canvasPick((e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H);
+});
+const curDir = () => dirStack[dirStack.length - 1];
+
+// ---------------------------------------------------------------- UI helpers
+function menu(el, items, { start = 0, noCancel = false, onMove } = {}) {
+  return new Promise(res => {
+    el.innerHTML = '';
+    let sel = items.findIndex((it, i) => i >= start && !it.dis);
+    if (sel < 0) sel = Math.max(0, items.findIndex(it => !it.dis));
+    const nodes = items.map((it, i) => {
+      const d = document.createElement('div');
+      d.className = 'opt' + (it.dis ? ' dis' : '');
+      d.innerHTML = `<span>${esc(it.label)}</span>` + (it.sub ? `<span class="sub">${esc(it.sub)}</span>` : '');
+      d.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (it.dis) return; sel = i; draw(); done(i); });
+      el.appendChild(d); return d;
+    });
+    function draw() {
+      nodes.forEach((n, i) => n.classList.toggle('sel', i === sel));
+      const n = nodes[sel], sc = el.closest('#cmds') || el;
+      if (n && sc.scrollHeight > sc.clientHeight) {
+        if (n.offsetTop < sc.scrollTop) sc.scrollTop = n.offsetTop;
+        else if (n.offsetTop + n.offsetHeight > sc.scrollTop + sc.clientHeight) sc.scrollTop = n.offsetTop + n.offsetHeight - sc.clientHeight;
+      }
+      if (onMove) onMove(sel);
+    }
+    function done(v) { pop(h); res(v); }
+    const h = a => {
+      if (!items.length) { if (a === 'cancel' && !noCancel) done(-1); return; }
+      if (a === 'up' || a === 'left') { sel = (sel - 1 + items.length) % items.length; draw(); }
+      else if (a === 'down' || a === 'right') { sel = (sel + 1) % items.length; draw(); }
+      else if (a === 'ok') { if (!items[sel].dis) done(sel); }
+      else if (a === 'cancel' && !noCancel) done(-1);
+    };
+    push(h); draw();
+  });
+}
+
+function typeText(who, text, memory) {
+  return new Promise(res => {
+    const box = $('dialog');
+    box.hidden = false; box.classList.toggle('memory', !!memory);
+    $('who').textContent = who || ''; $('who').hidden = !who;
+    $('choices').innerHTML = ''; $('more').hidden = true;
+    const body = $('say');
+    let i = 0, timer = null;
+    const finish = () => { clearInterval(timer); body.textContent = text; pop(h); box.onpointerdown = null; res(); };
+    const h = a => { if (a === 'ok' || a === 'cancel') finish(); };
+    push(h);
+    box.onpointerdown = e => { e.preventDefault(); finish(); };
+    if (reduceMotion) { finish(); return; }
+    body.textContent = '';
+    timer = setInterval(() => { i += 2; body.textContent = text.slice(0, i); if (i >= text.length) finish(); }, 18);
+  });
+}
+function waitOk() {
+  return new Promise(res => {
+    const box = $('dialog');
+    const fin = () => { pop(h); box.onpointerdown = null; res(); };
+    const h = a => { if (a === 'ok' || a === 'cancel') fin(); };
+    push(h); box.onpointerdown = e => { e.preventDefault(); fin(); };
+  });
+}
+async function say(who, text, o = {}) {
+  await typeText(who, text, o.memory);
+  $('more').hidden = false;
+  await waitOk();
+  $('dialog').hidden = true;
+}
+async function choose(who, text, options) {
+  await typeText(who, text);
+  const i = await menu($('choices'), options.map(l => ({ label: l })), { noCancel: true });
+  $('dialog').hidden = true;
+  return i;
+}
+let toastTimer = null;
+function toast(text) {
+  const t = $('toast'); t.textContent = text; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 1800);
+}
+let bannerTimer = null;
+function banner(text, ms = 1000) {
+  const b = $('banner'); b.textContent = text; b.hidden = false;
+  clearTimeout(bannerTimer); bannerTimer = setTimeout(() => { b.hidden = true; }, ms);
+}
+async function fadeOut() { $('fade').classList.add('on'); await sleep(reduceMotion ? 60 : 420); }
+async function fadeIn() { $('fade').classList.remove('on'); await sleep(reduceMotion ? 60 : 420); }
+async function run(fn) { lock++; try { await fn(); } finally { lock--; save(); } }
+
+let goalKey = '';
+function updateHUD() {
+  const g = $('goal');
+  const show = mode === 'explore' && S && MAP && $('pause').hidden && $('card').hidden;
+  if (g.hidden === show) g.hidden = !show;
+  if (!show) return;
+  const key = S.lv + '|' + S.goal;
+  if (key !== goalKey) { goalKey = key; g.innerHTML = `<b>Lv ${S.lv} &middot; ${esc(rankOf(S.lv))}</b><span>${esc(S.goal)}</span>`; }
+}
+
+// ---------------------------------------------------------------- drawing primitives
+function px(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); }
+function hash(a, b) { let h = (a * 374761393 + b * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
+const tileAt = (x, y) => (MAP && y >= 0 && y < 14 && x >= 0 && x < 20) ? MAP.rows[y][x] : '#';
+
+function drawTile(X, Y, t) {
+  const c = tileAt(X, Y), x = X * TS, y = Y * TS, h = hash(X, Y);
+  const floor = () => { px(x, y, 16, 16, '#545a76'); px(x, y + 15, 16, 1, '#454a64'); px(x + 15, y, 1, 16, '#454a64'); if (h > .7) px(x + 4, y + 6, 3, 1, '#61688c'); };
+  const grass = () => { px(x, y, 16, 16, '#3d7140'); if (h > .45) { px(x + (h * 13 | 0), y + ((h * 97) % 12 | 0), 1, 2, '#5a9a4a'); px(x + ((h * 53) % 13 | 0), y + ((h * 31) % 13 | 0), 1, 2, '#2e5a32'); } };
+  switch (c) {
+    case ',': grass(); break;
+    case 'p': px(x, y, 16, 16, '#b19866'); px(x + (h * 14 | 0), y + ((h * 71) % 14 | 0), 2, 1, '#957d54'); if (h > .6) px(x + ((h * 37) % 13 | 0), y + ((h * 19) % 13 | 0), 1, 1, '#cbb380'); break;
+    case '.': floor(); break;
+    case '=': {
+      px(x, y, 16, 16, '#7a2234');
+      if (tileAt(X - 1, Y) !== '=') px(x, y, 1, 16, '#d2a84a');
+      if (tileAt(X + 1, Y) !== '=') px(x + 15, y, 1, 16, '#d2a84a');
+      if (tileAt(X, Y - 1) !== '=') px(x, y, 16, 1, '#d2a84a');
+      px(x + 7, y + 7, 2, 2, '#963848'); break;
+    }
+    case '#': case 'w': {
+      px(x, y, 16, 16, '#2c3050');
+      for (let r = 0; r < 4; r++) { px(x, y + r * 4, 16, 1, '#3a3f66'); const off = r % 2 ? 4 : 0; for (let k = 0; k < 2; k++) px(x + off + k * 8, y + r * 4 + 1, 1, 3, '#20233d'); }
+      if (c === 'w') {
+        const glow = 0.75 + 0.25 * Math.sin(t * 3 + X);
+        px(x + 4, y + 3, 8, 11, '#181a30');
+        ctx.globalAlpha = glow; px(x + 5, y + 5, 6, 8, '#f2c86a'); px(x + 6, y + 4, 4, 1, '#f2c86a'); ctx.globalAlpha = 1;
+        px(x + 7, y + 4, 2, 9, '#181a30'); px(x + 5, y + 8, 6, 1, '#181a30');
+      }
+      break;
+    }
+    case 'T': grass(); px(x + 6, y + 10, 4, 6, '#5a3a22'); px(x + 2, y + 1, 12, 10, '#21502c'); px(x + 1, y + 3, 14, 6, '#21502c'); px(x + 4, y + 2, 4, 3, '#2f6a3a'); px(x + 9, y + 5, 3, 2, '#2a5e34'); break;
+    case '~': { px(x, y, 16, 16, '#2a5a9a'); const o = (t * 8 + X * 4) % 16 | 0; px(x + o, y + 5, 4, 1, '#5a8ad0'); px(x + (o + 8) % 16, y + 11, 4, 1, '#5a8ad0'); break; }
+    case 'f': {
+      px(x, y, 16, 16, '#9a9ab4'); px(x + 2, y + 2, 12, 12, '#3a6ab0');
+      if (tileAt(X - 1, Y) === 'f') px(x, y + 2, 2, 12, '#3a6ab0');
+      if (tileAt(X + 1, Y) === 'f') px(x + 14, y + 2, 2, 12, '#3a6ab0');
+      if (tileAt(X, Y - 1) === 'f') px(x + 2, y, 12, 2, '#3a6ab0');
+      if (tileAt(X, Y + 1) === 'f') px(x + 2, y + 14, 12, 2, '#3a6ab0');
+      const s = Math.sin(t * 3 + X * 2 + Y);
+      px(x + 7 + s * 3, y + 6 + Math.cos(t * 2 + X) * 2, 2, 2, '#d8eeff');
+      break;
+    }
+    case 'B': {
+      px(x, y, 16, 16, '#4a2e1e');
+      const cols = ['#8a2a2a', '#2a5a8a', '#3a6a3a', '#a08a3a', '#5a3a7a'];
+      for (let r = 0; r < 3; r++) { for (let i = 0; i < 7; i++) px(x + 1 + i * 2, y + 1 + r * 5, 2, 4, cols[((h * 100 | 0) + i * 7 + r * 3) % 5]); px(x, y + 5 + r * 5, 16, 1, '#2e1a10'); }
+      break;
+    }
+    case 't': floor(); px(x, y + 3, 16, 9, '#7a4e2a'); px(x, y + 3, 16, 2, '#9a6a3a'); px(x, y + 12, 16, 1, '#3a2414'); if (h > .55) { px(x + 7, y + 1, 2, 3, '#f0e6c8'); px(x + 7, y - 1 + Math.sin(t * 9 + X) * .6, 2, 2, '#ffcf5a'); } break;
+    case 'c': {
+      if (MAPID === 'archive') px(x, y, 16, 16, '#1e1a2c'); else floor();
+      const fl = Math.sin(t * 10 + X) > 0 ? 0 : 1;
+      px(x + 4, y + 5, 8, 11, '#7a7e98'); px(x + 3, y + 3, 10, 3, '#9a9eb8');
+      px(x + 5, y - 1 + fl, 6, 4, '#ff9a3a'); px(x + 6, y + fl, 4, 3, '#ffe07a'); break;
+    }
+    case 'd': px(x, y, 16, 16, '#3a2a20'); px(x + 1, y + 1, 14, 15, '#6a4628'); px(x + 7, y + 1, 2, 15, '#4a301a'); px(x + 5, y + 8, 1, 2, '#d2a84a'); px(x + 10, y + 8, 1, 2, '#d2a84a'); break;
+    case 'g': {
+      if (S.flags.archiveOpen) { px(x, y, 16, 16, '#1e1a2c'); ctx.globalAlpha = .4; px(x + 6, y + 6, 4, 4, '#b88aff'); ctx.globalAlpha = 1; break; }
+      px(x, y, 16, 16, '#24163a'); px(x + 1, y + 1, 14, 14, '#36225a');
+      const glow = `rgba(190,150,255,${0.45 + 0.35 * Math.sin(t * 2)})`;
+      const side = tileAt(X + 1, Y) === 'g' ? 1 : -1;
+      ctx.strokeStyle = glow; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x + (side > 0 ? 16 : 0), y + 8, 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + (side > 0 ? 16 : 0), y + 8, 3, 0, Math.PI * 2); ctx.stroke();
+      break;
+    }
+    case 'x': px(x, y, 16, 16, '#1e1a2c'); px(x, y + 15, 16, 1, '#16131f'); px(x + 15, y, 1, 16, '#16131f'); if (h > .8) px(x + 5, y + 5, 2, 2, '#2a2440'); break;
+    case 'X': px(x, y, 16, 16, '#120f1c'); for (let r = 0; r < 4; r++) px(x, y + r * 4, 16, 1, '#1c1830'); break;
+    default: px(x, y, 16, 16, '#000');
+  }
+}
+
+function drawPerson(x, y, o) {
+  x = Math.round(x); y = Math.round(y);
+  const { robe, trim, hair, skin, dir = 'down', step = 0, hat } = o;
+  px(x + 3, y + 14, 10, 2, 'rgba(0,0,0,.3)');
+  if (step) { px(x + 5, y + 12, 2, 3, '#1a1420'); px(x + 9, y + 13, 2, 2, '#1a1420'); }
+  else { px(x + 5, y + 13, 2, 2, '#1a1420'); px(x + 9, y + 13, 2, 2, '#1a1420'); }
+  px(x + 4, y + 8, 8, 5, robe); px(x + 3, y + 10, 10, 3, robe);
+  px(x + 5, y + 8, 6, 1, trim);
+  if (dir === 'down') px(x + 7, y + 9, 2, 3, trim);
+  if (dir === 'left') px(x + 2, y + 9, 2, 2, skin);
+  if (dir === 'right') px(x + 12, y + 9, 2, 2, skin);
+  px(x + 5, y + 3, 6, 5, skin);
+  px(x + 4, y + 2, 8, 2, hair);
+  if (dir === 'up') px(x + 4, y + 2, 8, 6, hair);
+  else if (dir === 'left') { px(x + 9, y + 3, 3, 4, hair); px(x + 6, y + 5, 1, 1, '#1a1420'); }
+  else if (dir === 'right') { px(x + 4, y + 3, 3, 4, hair); px(x + 9, y + 5, 1, 1, '#1a1420'); }
+  else { px(x + 4, y + 3, 1, 3, hair); px(x + 11, y + 3, 1, 3, hair); px(x + 6, y + 5, 1, 1, '#1a1420'); px(x + 9, y + 5, 1, 1, '#1a1420'); }
+  if (hat) { px(x + 3, y + 2, 10, 1, hat); px(x + 5, y, 6, 2, hat); px(x + 6, y - 2, 4, 2, hat); px(x + 8, y - 4, 2, 2, hat); }
+}
+
+function drawFoe(art, cx, cy, t, k = 1) {
+  const x = Math.round(cx), y = Math.round(cy);
+  switch (art) {
+    case 'dummy':
+      px(x - 4, y + 9, 8, 2, 'rgba(0,0,0,.3)'); px(x - 1, y - 2, 2, 12, '#7a5a32'); px(x - 6, y - 1, 12, 2, '#7a5a32');
+      px(x - 4, y - 9, 8, 8, '#d8c07a'); px(x - 3, y - 8, 6, 6, '#c0453a'); px(x - 2, y - 7, 4, 4, '#f0e6c8'); px(x - 1, y - 6, 2, 2, '#c0453a'); break;
+    case 'imp': {
+      const b = Math.sin(t * 6 + x) * 1.5;
+      px(x - 6, y + 9, 12, 2, 'rgba(0,0,0,.3)');
+      px(x - 6, y - 4 + b, 12, 10, '#1c1830'); px(x - 5, y - 6 + b, 10, 2, '#1c1830'); px(x - 6, y - 8 + b, 2, 3, '#1c1830'); px(x + 4, y - 8 + b, 2, 3, '#1c1830');
+      px(x - 3, y - 2 + b, 2, 2, '#ffea6a'); px(x + 1, y - 2 + b, 2, 2, '#ffea6a'); px(x - 2, y + 2 + b, 4, 1, '#c04a6a');
+      px(x - 7, y + 6, 4, 2, '#1c1830'); px(x + 3, y + 6, 4, 2, '#1c1830'); break;
+    }
+    case 'broom': {
+      const a = Math.sin(t * 5 + x) * 2;
+      px(x - 5, y + 11, 10, 2, 'rgba(0,0,0,.3)');
+      px(x - 1 + a * .4, y - 11, 2, 14, '#9a6a3a'); px(x - 5, y + 2, 10, 3, '#c8a04a'); px(x - 6, y + 5, 12, 5, '#e0c060');
+      px(x - 6, y + 9, 2, 2, '#e0c060'); px(x + 4, y + 9, 2, 2, '#e0c060'); px(x - 2, y + 3, 1, 1, '#222'); px(x + 1, y + 3, 1, 1, '#222'); break;
+    }
+    case 'wisp': {
+      const r = 5 + Math.sin(t * 4 + x);
+      ctx.fillStyle = 'rgba(150,120,230,.25)'; ctx.beginPath(); ctx.arc(x, y, r + 4, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3a2a6a'; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+      px(x - 3, y - 1, 2, 2, '#c8f0ff'); px(x + 1, y - 1, 2, 2, '#c8f0ff'); px(x - 1, y + r - 1, 2, 4, '#3a2a6a'); break;
+    }
+    case 'toad':
+      px(x - 8, y + 8, 16, 2, 'rgba(0,0,0,.3)');
+      px(x - 8, y - 2, 16, 9, '#4a7a3a'); px(x - 6, y - 6, 4, 4, '#4a7a3a'); px(x + 2, y - 6, 4, 4, '#4a7a3a');
+      px(x - 5, y - 5, 2, 2, '#ffe060'); px(x + 3, y - 5, 2, 2, '#ffe060'); px(x - 6, y + 3, 12, 3, '#9ac06a');
+      px(x - 9, y + 6, 4, 2, '#3a6a2a'); px(x + 5, y + 6, 4, 2, '#3a6a2a'); break;
+    case 'gargoyle': {
+      const w = Math.sin(t * 3) * 2;
+      px(x - 9, y + 11, 18, 2, 'rgba(0,0,0,.35)');
+      px(x - 14, y - 8 + w, 7, 8, '#5a5e6a'); px(x + 7, y - 8 + w, 7, 8, '#5a5e6a');
+      px(x - 7, y - 10, 14, 18, '#7a7e8a'); px(x - 6, y - 14, 4, 4, '#7a7e8a'); px(x + 2, y - 14, 4, 4, '#7a7e8a');
+      px(x - 4, y - 6, 3, 2, '#ff5a3a'); px(x + 1, y - 6, 3, 2, '#ff5a3a'); px(x - 3, y - 1, 6, 2, '#4a4e5a');
+      px(x - 8, y + 8, 6, 3, '#5a5e6a'); px(x + 2, y + 8, 6, 3, '#5a5e6a'); break;
+    }
+    case 'shade': {
+      const f = Math.sin(t * 2 + x) * 1.5;
+      px(x - 6, y - 12 + f, 12, 6, '#1a1426'); px(x - 7, y - 6 + f, 14, 14, '#241a36'); px(x - 8, y + 6 + f, 16, 4, '#241a36');
+      px(x - 3, y - 9 + f, 2, 1, '#b88aff'); px(x + 1, y - 9 + f, 2, 1, '#b88aff');
+      px(x - 11, y - 2 + f, 5, 6, '#c8b890'); px(x - 10, y - 1 + f, 1, 4, '#7a3a3a'); break;
+    }
+    case 'warden': {
+      const f = Math.sin(t * 1.5) * 2;
+      ctx.fillStyle = 'rgba(255,220,140,.10)'; ctx.beginPath(); ctx.arc(x, y, 28 * k, 0, 7); ctx.fill();
+      px(x - 17 * k, y + 19 * k, 34 * k, 3, 'rgba(0,0,0,.35)');
+      px(x - 10 * k, y - 26 * k + f, 20 * k, 10 * k, '#2a2440');
+      px(x - 14 * k, y - 16 * k + f, 28 * k, 28 * k, '#3a3258');
+      px(x - 18 * k, y + 10 * k + f, 36 * k, 9 * k, '#3a3258');
+      px(x - 20 * k, y - 10 * k + f, 6 * k, 18 * k, '#2e2848'); px(x + 14 * k, y - 10 * k + f, 6 * k, 18 * k, '#2e2848');
+      px(x - 5 * k, y - 22 * k + f, 3 * k, 2 * k, '#ffd27a'); px(x + 2 * k, y - 22 * k + f, 3 * k, 2 * k, '#ffd27a');
+      const cy2 = y - 2 * k + f;
+      ctx.fillStyle = '#e8dcb0'; ctx.beginPath(); ctx.arc(x, cy2, 8 * k, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 1; ctx.beginPath();
+      const a = -t * 2; // hands run backwards
+      ctx.moveTo(x, cy2); ctx.lineTo(x + Math.cos(a) * 6 * k, cy2 + Math.sin(a) * 6 * k);
+      ctx.moveTo(x, cy2); ctx.lineTo(x + Math.cos(a / 12) * 4 * k, cy2 + Math.sin(a / 12) * 4 * k); ctx.stroke();
+      break;
+    }
+  }
+}
+
+function drawNPC(n, t) {
+  const x = n.x * TS, y = n.y * TS - 4;
+  switch (n.kind) {
+    case 'person': drawPerson(x, y, { ...LOOKS[n.look], dir: n.dir }); break;
+    case 'ghost': ctx.globalAlpha = .5; drawPerson(x, y + Math.sin(t * 2) * 1.5, { robe: '#cfe0ff', trim: '#ffffff', hair: '#e8f0ff', skin: '#e8f0ff', dir: n.dir }); ctx.globalAlpha = 1; break;
+    case 'lantern': {
+      const glow = S.house ? HOUSES[S.house].color : '#ffe9a8';
+      px(x + 7, y - 2, 1, 4, '#8a8a9a'); px(x + 3, y + 2, 10, 2, '#7a6a3a'); px(x + 4, y + 4, 8, 9, '#5a4a2a');
+      ctx.globalAlpha = .75 + .25 * Math.sin(t * 4); px(x + 5, y + 5, 6, 7, glow); ctx.globalAlpha = 1;
+      px(x + 3, y + 13, 10, 2, '#7a6a3a'); px(x + 3, y + 18, 10, 2, 'rgba(0,0,0,.25)');
+      break;
+    }
+    case 'dummy': drawFoe('dummy', x + 8, y + 6, t); break;
+    case 'imps': drawFoe('imp', x + 5, y + 6, t); drawFoe('imp', x + 12, y + 12, t + 1); break;
+    case 'warden': drawFoe('warden', x + 8, y + 2, t, .55); break;
+  }
+}
+
+// ---------------------------------------------------------------- NPCs and scripts
+const NPCS = {
+  courtyard: [
+    { x: 11, y: 3, kind: 'person', look: 'aldous', dir: 'down', talk: talkAldous },
+    { x: 5, y: 10, kind: 'person', look: 'pell', dir: 'right', talk: () => say('Pell', 'The fountain is charmed. Drink from it and you will feel right as rain. Tastes a bit like pennies, though.') },
+  ],
+  hall: [
+    { x: 9, y: 1, kind: 'person', look: 'thorne', dir: 'down', talk: talkThorne },
+    { x: 12, y: 2, kind: 'lantern', talk: talkLantern },
+    { x: 16, y: 3, kind: 'ghost', dir: 'down', talk: talkGhost },
+    { x: 4, y: 6, kind: 'person', look: 'juniper', dir: 'down', talk: () => say('Juniper', S.flags.sorted
+        ? 'You are the Unwritten Student! The Quill has not added a name in six hundred years. My sister thinks you are a spy. I think you are a ghost. No offence, Sir Pemberton.'
+        : 'Did you hear? The Admissions Quill wrote one extra name this morning. Nobody knows who it is.') },
+    { x: 14, y: 9, kind: 'person', look: 'tobias', dir: 'left', talk: () => say('Tobias', 'The stairs in the east tower move on Tuesdays. Today is Tuesday. I have been late to everything since breakfast.') },
+  ],
+  library: [
+    { x: 17, y: 3, kind: 'person', look: 'quillon', dir: 'down', talk: talkQuillon },
+    { x: 8, y: 6, kind: 'person', look: 'mira', dir: 'right', show: () => !S.flags.mira, talk: talkMira },
+    { x: 9, y: 6, kind: 'imps', show: () => !S.flags.mira, talk: talkMira },
+  ],
+  grounds: [
+    { x: 6, y: 4, kind: 'person', look: 'brannoch', dir: 'right', talk: talkBrannoch },
+    { x: 12, y: 4, kind: 'dummy', talk: async () => { if (!S.flags.trained) return talkBrannoch(); await say(null, 'The training dummy sags on its post. It looks like it needs a lie down.'); } },
+  ],
+  archive: [
+    { x: 9, y: 1, kind: 'warden', show: () => !S.flags.chapter1, talk: talkWarden },
+  ],
+};
+const visibleNPCs = () => (NPCS[MAPID] || []).filter(n => !n.show || n.show());
+const npcAt = (x, y) => visibleNPCs().find(n => n.x === x && n.y === y);
+
+async function talkAldous() {
+  if (!S.flags.sorted) {
+    await say('Prefect Aldous', 'Name? ...Hm. That is strange. You are not on my list.');
+    await say('Prefect Aldous', 'Never mind. The Headmistress will sort it out. Great Hall, through the north doors. Go!');
+  } else if (!S.flags.trained) await say('Prefect Aldous', `A ${HOUSES[S.house].name}! House points are awarded for good conduct and taken away for setting the hedges on fire. Twice this week already. Brannoch is east of here.`);
+  else if (!S.flags.mira) await say('Prefect Aldous', 'The Library is through the west arch. Mind the Inkimps. Someone left a bestiary open again.');
+  else if (!S.flags.chapter1) await say('Prefect Aldous', 'People say the Archive seal hummed when you walked past it. That seal has not so much as flickered in forty years.');
+  else await say('Prefect Aldous', 'You look different today. Taller, or older, or something. Do not tell me. I am a Prefect. I do not want to know.');
+}
+
+async function talkThorne() {
+  if (!S.flags.sorted) {
+    await say('Headmistress Thorne', 'Ah. The one the Quill wrote about.');
+    await say('Headmistress Thorne', 'Every summer the Admissions Quill writes the names of the children Aldermere will teach. This morning it wrote one more name, after the list was sealed.');
+    await say('Headmistress Thorne', `${S.name}. In handwriting the Registrar swears is your own.`);
+    const c = await choose(S.name, '(What do you say?)', ['I don\'t remember anything.', 'I have never been here before.']);
+    await say('Headmistress Thorne', c === 0 ? 'No. I don\'t suppose you do.' : 'Haven\'t you? The fountain seemed to know you. It splashed.');
+    await say('Headmistress Thorne', 'Memory is a curious thing at Aldermere. It has a habit of finding its way home. Until yours does, you are a student here like any other.');
+    await say('Headmistress Thorne', 'Step up to the Oracle Lantern beside me. It will see which House you belong to.');
+    await sortingCeremony();
+    const h = HOUSES[S.house];
+    await say('Headmistress Thorne', `${h.name} it is. Now, a warning. When the Lantern looked into you, it found no spark. Your magic is asleep, or it is gone.`);
+    await say('Headmistress Thorne', 'Most first-years arrive with a little magic already. You will start from nothing. Every Archwizard in our history began as an Initiate. A few of them began lower.');
+    await say('Headmistress Thorne', 'Report to Instructor Brannoch at the Training Grounds, east of the courtyard. If anything can wake a sleeping spark, it is a training dummy that hits back.');
+    S.flags.sorted = true;
+    setGoal('Meet Instructor Brannoch at the Training Grounds (east of the courtyard).');
+  } else if (!S.flags.trained) await say('Headmistress Thorne', 'Go on. Brannoch is east of the courtyard.');
+  else if (!S.flags.chapter1) await say('Headmistress Thorne', 'The Library holds more answers than I do. Most days.');
+  else {
+    await say('Headmistress Thorne', 'So. You have met the Warden.');
+    await say('Headmistress Thorne', 'Some doors in this school were locked by people we have not met yet. I always suspected one of them would come back for theirs.');
+  }
+}
+
+async function sortingCeremony() {
+  const tally = { ember: 0, tide: 0, thorn: 0, gale: 0 };
+  let last = 'ember';
+  const qs = [
+    ['A door stands locked before you. What do you do?', ['Burn it down.', 'Study the lock.', 'Wait for a friend with the key.', 'Climb through the window above it.']],
+    ['What do you fear most?', ['Being a coward.', 'Being a fool.', 'Being alone.', 'Being ordinary.']],
+    ['What would you give to have your memories back?', ['My comfort.', 'My certainty.', 'Nothing that belongs to someone else.', 'Anything at all.']],
+  ];
+  await say('Oracle Lantern', 'The flame inside the Lantern leans toward you, the way a flower leans toward a window.');
+  for (const [q, opts] of qs) {
+    const i = await choose('Oracle Lantern', q, opts);
+    last = HOUSE_ORDER[i]; tally[last]++;
+  }
+  const best = HOUSE_ORDER.slice().sort((a, b) => (tally[b] - tally[a]) || ((b === last) - (a === last)))[0];
+  S.house = best;
+  await say('Oracle Lantern', `${HOUSES[best].name.toUpperCase()}! ${HOUSES[best].motto}.`);
+}
+
+async function talkLantern() {
+  if (!S.house) return say(null, 'The Oracle Lantern burns a patient white. It seems to be waiting for the Headmistress.');
+  await say(null, `The Lantern flickers ${HOUSES[S.house].name} colours as you pass. It already knows you.`);
+}
+
+async function talkGhost() {
+  await say('Sir Pemberton', 'I am Sir Pemberton the Partially Present. I died, but not entirely.');
+  await say('Sir Pemberton', 'You have the look of someone who has also misplaced a portion of themselves. It comes back, in my experience. Usually at inconvenient moments.');
+}
+
+async function talkBrannoch() {
+  if (!S.flags.sorted) return say('Instructor Brannoch', 'No House colours, no training. Get yourself Sorted in the Great Hall, then come back.');
+  if (!S.flags.trained) {
+    await say('Instructor Brannoch', 'So you are the one with no spark. Good. No bad habits to unlearn.');
+    await say('Instructor Brannoch', 'That dummy is enchanted to hit back. Gently. Mostly. When your gauge fills, pick Attack and give it a whack with your wand.');
+    await say('Instructor Brannoch', 'Focus draws magic back into you, once you have any to draw. Today you do not. Off you go.');
+    const r = await fight(['dummy'], { noFlee: true });
+    if (r !== 'win') return;
+    await say('Instructor Brannoch', 'There! Did you feel that? A spark! First time I have ever seen one wake up mid-swing.');
+    await say('Instructor Brannoch', 'Now, the Library is west of the courtyard. Quillon has been shouting for help all morning, and you need books more than bruises.');
+    await say('Instructor Brannoch', 'Come back any time for a Trial. And watch the grass out there. Things have got loose.');
+    S.flags.trained = true;
+    setGoal('Answer the call for help in the Library (west of the courtyard).');
+    spawnField();
+    return;
+  }
+  const trials = [
+    { label: 'Trial I: Unruly Pack', keys: ['inkimp', 'broom', 'inkimp'], line: 'Brooms and imps. Mind your ankles.' },
+    { label: 'Trial II: Stone and Gloom', keys: ['gargoyle', 'wisp'], line: 'A gargoyle off the east roof and its gloomy little friend. Bring Mira.' },
+  ];
+  if (S.flags.chapter1) trials.push({ label: 'Trial III: Echo of the Warden', keys: ['echo'], line: 'I bottled an echo of the thing in the Archive. It is not happy about it.' });
+  const opts = [...trials.map(t => t.label), 'Not now'];
+  const i = await choose('Instructor Brannoch', 'Fancy a Trial? Win and you earn experience. Lose and you earn humility.', opts);
+  if (i >= trials.length) return say('Instructor Brannoch', 'Suit yourself. The dummy is always here.');
+  await say('Instructor Brannoch', trials[i].line);
+  const r = await fight(trials[i].keys, {});
+  if (r === 'win') { S.items.tonic++; await say('Instructor Brannoch', 'Well fought! Here, have a Moonleaf Tonic. You have earned it.'); }
+}
+
+async function talkQuillon() {
+  if (!S.flags.trained) return say('Librarian Quillon', 'Welcome to the Library. Please do not feed the books. And please do not let anyone open the Bestiary of Small Nuisances.');
+  if (!S.flags.mira) return say('Librarian Quillon', 'Oh, thank the stacks, a student. Mira Fenwick opened the Bestiary of Small Nuisances and now there are Inkimps everywhere. She is by the shelves, to the west.');
+  if (!S.flags.quillonGift) {
+    S.flags.quillonGift = true; S.items.tonic += 2; S.items.ether += 1;
+    await say('Librarian Quillon', 'Thank you. Here, two Moonleaf Tonics and an Ether Drop. Shelving duty is dangerous work.');
+  }
+  if (!S.flags.archiveOpen) await say('Librarian Quillon', 'The great seal at the north wall guards the Forbidden Archive. It only opens for someone it has met before. Which is nobody. It has been shut for forty years.');
+  else if (!S.flags.chapter1) await say('Librarian Quillon', 'You opened it. You actually opened it. I am writing a very strongly worded letter to myself about this.');
+  else await say('Librarian Quillon', 'Return any books you borrowed from the Archive. Even the ones that bite.');
+}
+
+async function talkMira() {
+  if (!S.flags.trained) return say('Mira', 'Sorry, I can\'t talk. I am having a small problem with a book. It is fine. Everything is fine.');
+  await say('Mira', 'Oh, thank goodness, someone with a wand. Don\'t look at me like that. It was ONE page.');
+  await say('Mira', 'They are Inkimps. They eat punctuation. Help me put them back before they get to the encyclopaedias!');
+  const ms = miraStats(miraLv());
+  S.mira = { hp: ms.maxhp, mp: ms.maxmp };
+  S.flags.mira = true;
+  await say(null, 'Mira joins your party!');
+  const r = await fight(['inkimp', 'inkimp'], { noFlee: true });
+  if (r !== 'win') { S.flags.mira = false; S.mira = null; return; }
+  await say('Mira', 'Mira Fenwick. Tidewyrm, second year. And you are the Unwritten Student, aren\'t you? Everyone is talking about you.');
+  await say('Mira', 'I have read every record in this library about the Admissions Quill. It has never added a name. Not once in six hundred years.');
+  await say('Mira', 'Except there is one place I have never been able to read. The Forbidden Archive, behind the seal at the north wall.');
+  await say('Mira', 'Seals answer to strong magic. Reach Adept rank and I bet it will at least look at you. I am coming too. For research.');
+  await say('Mira', 'Oh, and when we are both ready at the same moment, we can weave our spells together. Look for Tech in battle.');
+  setGoal(S.lv >= 5 ? 'Examine the Archive seal at the north wall of the Library.' : 'Train to Adept rank (Lv 5): fight on the Training Grounds, then examine the Library seal.');
+}
+
+async function gateScript() {
+  if (S.flags.archiveOpen) return;
+  if (!S.flags.mira) return say(null, 'A great seal of interlocking circles. It is cold, and it does not care that you are here.');
+  if (S.lv < 5) {
+    await say(null, 'The seal stirs under your hand, then goes still, as if it is waiting for you to grow into something.');
+    await say('Mira', 'It moved! It has never moved for anyone! Reach Adept rank and try again.');
+    return;
+  }
+  await say(null, 'You press your palm to the seal. The circles turn, click by click, like a lock remembering its key.');
+  await say('???', '...Welcome back.');
+  await say('Mira', 'Did the door just say welcome BACK?');
+  S.flags.archiveOpen = true;
+  setGoal('Explore the Forbidden Archive. Something waits at the top. Magus rank (Lv 7) is wise.');
+}
+
+async function talkWarden() {
+  await say('The Hollow Warden', 'Footsteps. After forty years, footsteps.');
+  await say('The Hollow Warden', 'And yours, of all the footsteps in the world. You are early. You are so very early.');
+  const c = await choose(S.name, '(What do you say?)', ['Who are you?', 'Do you know me?']);
+  await say('The Hollow Warden', c === 0 ? 'I am the Warden. I keep what you left here.' : 'Better than you know yourself. That is the problem.');
+  await say('The Hollow Warden', 'I do not hand it back to anyone who is not ready. Show me what you are now.');
+  const r = await fight(['warden'], { noFlee: true });
+  if (r !== 'win') return;
+  await say('The Hollow Warden', 'Enough. Enough. You are sharper than I expected.');
+  await say('The Hollow Warden', 'Listen, then. The Quill wrote your name because you asked it to. You asked it forty years from now, as Archwizard of Aldermere.');
+  await say('The Hollow Warden', 'You stepped backwards through time. The crossing took your memories as its toll. You knew it would, and you came anyway.');
+  await say('The Hollow Warden', 'They are not destroyed. They return as your power returns. Rise to Archwizard and you will remember why you came.');
+  await say('Mira', 'Forty years from now? ...Right. Okay. I am going to need a much bigger notebook.');
+  await say('The Hollow Warden', 'Go, Archwizard. Be quicker this time.');
+  S.flags.chapter1 = true;
+  setGoal('Rise to Archwizard (Lv 12). Brannoch\'s Trials are open to you.');
+  await showCard('End of Chapter One', `<p>${esc(S.name)} of ${esc(HOUSES[S.house].name)}, ${esc(rankOf(S.lv))}, Level ${S.lv}.</p><p>You know where you came from now, if not why. Keep training. Every rank brings back another memory.</p>`, 'Keep playing');
+}
+
+async function finale() {
+  await say('Mira', 'You went quiet just now. Are you alright?');
+  const c = await choose(S.name, '(What do you say?)', ['I remember everything.', 'I\'m just glad you\'re here.']);
+  await say('Mira', c === 0 ? 'Then tell me. All of it. I have a bigger notebook now.' : 'That is a very strange thing to say to someone you met this term. ...I\'m glad you\'re here too.');
+  await showCard('Archwizard', `<p>${esc(S.name)} has risen from Unawakened to Archwizard of Aldermere, forty years early.</p><p>Somewhere above the school, a clocktower that is on no map starts running forwards again. This is where the prototype ends.</p>`, 'Keep wandering');
+}
+
+function showCard(title, html, btn) {
+  return new Promise(async res => {
+    $('cardtitle').textContent = title; $('cardtext').innerHTML = html; $('card').hidden = false;
+    await menu($('cardmenu'), [{ label: btn }], { noCancel: true });
+    $('card').hidden = true; res();
+  });
+}
+
+const LORE = {
+  library: [
+    '"A Brief History of Brief Histories." It is very long.',
+    '"Hexes for the Shy." Someone has folded down the corner of chapter three.',
+    '"Aldermere: Six Centuries of Students." Your name is not in the index. You check twice.',
+    '"On Temporal Magic, and Why Not." Every page after the first chapter is blank.',
+    '"Wand Care for Beginners." Step one: do not lick the wand.',
+  ],
+  archive: [
+    'A ledger of first-years, dated forty years from now. The ink is still wet.',
+    'A diary in your own handwriting. Every page is blank. For now.',
+    'A map of Aldermere with one extra tower drawn in. Its clock face has no numbers.',
+  ],
+};
+
+// ---------------------------------------------------------------- field
+function loadMap(id, x, y, dir) {
+  MAPID = id; MAP = MAPS[id];
+  P = { x, y, tx: x, ty: y, dir: dir || 'down', moving: false, prog: 0, step: 0 };
+  S.map = id; S.x = x; S.y = y; S.dir = P.dir;
+  mode = 'explore';
+  spawnField();
+}
+function spawnField() {
+  FIELD = [];
+  const cfg = MAP.foes && MAP.foes();
+  if (!cfg) return;
+  cfg.spots.forEach(([x, y]) => {
+    const group = pick(cfg.groups);
+    FIELD.push({ x, y, tx: x, ty: y, hx: x, hy: y, prog: 0, moving: false, timer: rnd(.4, 1.4), group, art: FOES[group[0]].art });
+  });
+}
+async function enterMap(id, x, y, dir) {
+  lock++;
+  try {
+    await fadeOut();
+    loadMap(id, x, y, dir);
+    await sleep(60);
+    await fadeIn();
+    toast(MAP.name);
+    save();
+    if (MAP.onEnter) await MAP.onEnter();
+  } finally { lock--; }
+}
+const STEP = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+function walkable(x, y, forFoe) {
+  if (x < 0 || y < 0 || x >= 20 || y >= 14) return false;
+  const c = tileAt(x, y);
+  if (c === 'g') { if (!S.flags.archiveOpen) return false; }
+  else if (SOLID.has(c)) return false;
+  if (npcAt(x, y)) return false;
+  if (forFoe) {
+    if (MAP.exits.some(e => e.x === x && e.y === y)) return false;
+    if (FIELD.some(f => (f.x === x && f.y === y) || (f.tx === x && f.ty === y))) return false;
+  }
+  return true;
+}
+function pPos() { return [(P.x + (P.tx - P.x) * P.prog) * TS, (P.y + (P.ty - P.y) * P.prog) * TS]; }
+function fPos(f) { return [(f.x + (f.tx - f.x) * f.prog) * TS, (f.y + (f.ty - f.y) * f.prog) * TS]; }
+
+function updateExplore(dt) {
+  const frozen = lock > 0 || handlers.length > 0;
+  if (P.moving) {
+    P.prog += dt * 5.5;
+    if (P.prog >= 1) { P.x = P.tx; P.y = P.ty; P.moving = false; P.prog = 0; S.x = P.x; S.y = P.y; S.dir = P.dir; onArrive(); }
+  }
+  if (!P.moving && !frozen) {
+    const d = curDir();
+    if (d) {
+      P.dir = d;
+      const nx = P.x + STEP[d][0], ny = P.y + STEP[d][1];
+      if (walkable(nx, ny)) { P.tx = nx; P.ty = ny; P.moving = true; P.prog = 0; P.step ^= 1; }
+    }
+  }
+  if (frozen) return;
+  grace -= dt;
+  for (const f of FIELD) {
+    if (f.moving) { f.prog += dt * 2.6; if (f.prog >= 1) { f.x = f.tx; f.y = f.ty; f.moving = false; f.prog = 0; } continue; }
+    f.timer -= dt; if (f.timer > 0) continue;
+    f.timer = rnd(.5, 1.5);
+    let d;
+    const dx = P.x - f.x, dy = P.y - f.y;
+    if (Math.abs(dx) + Math.abs(dy) < 5 && Math.random() < .55) d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+    else d = pick(DIRS);
+    const nx = f.x + STEP[d][0], ny = f.y + STEP[d][1];
+    if (Math.abs(nx - f.hx) + Math.abs(ny - f.hy) <= 4 && walkable(nx, ny, true)) { f.tx = nx; f.ty = ny; f.moving = true; f.prog = 0; }
+  }
+  if (grace <= 0) {
+    const [ppx, ppy] = pPos();
+    const hit = FIELD.find(f => { const [fx, fy] = fPos(f); return Math.hypot(fx - ppx, fy - ppy) < 12; });
+    if (hit) encounter(hit);
+  }
+}
+async function encounter(f) {
+  FIELD = FIELD.filter(o => o !== f);
+  if (P.moving) { P.x = P.tx; P.y = P.ty; P.moving = false; P.prog = 0; }
+  await fight(f.group, {});
+  grace = 1.5;
+}
+function onArrive() {
+  const e = MAP.exits.find(e => e.x === P.x && e.y === P.y && (!e.cond || e.cond()));
+  if (e) enterMap(e.to, e.tx, e.ty, P.dir);
+}
+function exploreAction(a) {
+  if (a === 'cancel' || a === 'menu') { openPause(); return; }
+  if (a !== 'ok' || P.moving) return;
+  const fx = P.x + STEP[P.dir][0], fy = P.y + STEP[P.dir][1];
+  const n = npcAt(fx, fy);
+  if (n) {
+    if (n.dir) n.dir = { up: 'down', down: 'up', left: 'right', right: 'left' }[P.dir];
+    run(n.talk); return;
+  }
+  const c = tileAt(fx, fy);
+  if (c === 'g') run(gateScript);
+  else if (c === 'f') run(async () => { restoreParty(); await say(null, 'You drink from the fountain. The water tastes of rain and copper. You feel completely restored.'); });
+  else if (c === 'B' && LORE[MAPID]) run(() => say(null, pick(LORE[MAPID])));
+  else if (c === '~') run(() => say(null, 'Something large croaks beneath the surface, then thinks better of it.'));
+  else if (c === 'w') run(() => say(null, 'Through the glass you can see the far towers. One of them has a clock. You are sure it was not there a moment ago.'));
+}
+
+// ---------------------------------------------------------------- pause menu
+function openPause() {
+  run(async () => {
+    const st = heroStats(S.lv);
+    const nr = nextRank(S.lv);
+    const toNext = S.lv >= MAXLV ? 'Max level' : `${XP[S.lv + 1] - S.xp} XP to Lv ${S.lv + 1}`;
+    const card = (nm, sub, hp, mhp, mp, mmp, extra) => `<div class="pc"><span class="nm">${esc(nm)}</span><span class="dim">${esc(sub)}</span><span>HP ${hp}/${mhp} &middot; MP ${mp}/${mmp}</span><span class="dim">${esc(extra)}</span></div>`;
+    let html = `<section><h3>Party</h3>${card(S.name, `${S.house ? HOUSES[S.house].name : 'Unsorted'} · Lv ${S.lv}`, S.hp, st.maxhp, S.mp, st.maxmp, rankOf(S.lv))}`;
+    if (S.mira) { const ms = miraStats(miraLv()); html += card('Mira Fenwick', `Tidewyrm · Lv ${miraLv()}`, S.mira.hp, ms.maxhp, S.mira.mp, ms.maxmp, 'Scholar'); }
+    html += `<div class="dim">${esc(toNext)}${nr ? ` · next rank ${esc(nr[1])} at Lv ${nr[0]}` : ''}</div></section>`;
+    const sp = heroSpells(S.lv, S.house);
+    html += `<section><h3>Spells</h3>${sp.length ? `<div>${sp.map(k => esc(SPELLS[k].name)).join(' · ')}</div>` : '<div class="dim">None yet. Your spark is asleep.</div>'}</section>`;
+    html += `<section><h3>Satchel</h3><div>Moonleaf Tonic x${S.items.tonic} <span class="dim">(heals 50, revives)</span><br>Ether Drop x${S.items.ether} <span class="dim">(restores 15 MP)</span></div></section>`;
+    html += `<section><h3>Recovered memories</h3>${S.memories.length ? `<ul>${S.memories.map(l => `<li>${esc(MEMORIES[l])}</li>`).join('')}</ul>` : '<div class="dim">Nothing yet. They return as your magic does.</div>'}</section>`;
+    html += `<section><h3>Goal</h3><div>${esc(S.goal)}</div></section>`;
+    $('pausebody').innerHTML = html;
+    $('pause').hidden = false;
+    while (true) {
+      const i = await menu($('pausemenu'), [{ label: 'Resume' }, { label: 'Save game' }, { label: 'Quit to title' }]);
+      if (i === 1) { save(); toast('Game saved'); continue; }
+      $('pause').hidden = true;
+      if (i === 2) { save(); MAP = null; titleFlow(); }
+      return;
+    }
+  });
+}
+
+// ---------------------------------------------------------------- battle
+const aliveFoes = () => B.foes.filter(f => f.hp > 0);
+const aliveParty = () => B.party.filter(p => p.hp > 0);
+function makeHero() {
+  const st = heroStats(S.lv);
+  return { id: 'hero', name: S.name, ...st, hp: Math.min(S.hp, st.maxhp), mp: Math.min(S.mp, st.maxmp), ally: true, spells: heroSpells(S.lv, S.house), atb: rnd(40, 75) };
+}
+function makeMira() {
+  const lv = miraLv(), st = miraStats(lv);
+  return { id: 'mira', name: 'Mira', ...st, hp: Math.min(S.mira.hp, st.maxhp), mp: Math.min(S.mira.mp, st.maxmp), ally: true, spells: miraSpells(lv), atb: rnd(30, 65) };
+}
+function startBattle(keys, opts) {
+  return new Promise(res => {
+    const party = [makeHero()];
+    if (S.mira) party.push(makeMira());
+    const pp = party.length === 1 ? [[252, 84]] : [[242, 70], [268, 104]];
+    party.forEach((p, i) => { p.bx = pp[i][0]; p.by = pp[i][1]; });
+    const fp = { 1: [[84, 82]], 2: [[72, 64], [104, 102]], 3: [[56, 58], [108, 78], [66, 112]] }[keys.length];
+    const foes = keys.map((k, i) => ({ ...FOES[k], key: k, maxhp: FOES[k].hp, ally: false, atb: rnd(0, 45), bx: fp[i][0], by: fp[i][1] }));
+    if (keys.length === 1 && FOES[keys[0]].art === 'warden') { foes[0].bx = 86; foes[0].by = 76; }
+    B = { party, foes, opts, res, queue: [], busy: false, menu: false, cursor: null, fx: [], t: 0, over: false, actor: null };
+    mode = 'battle';
+    buildPartyPanel();
+    $('cmdtitle').textContent = ''; $('cmdlist').innerHTML = '';
+    $('battle').hidden = false;
+    banner(keys.length === 1 ? FOES[keys[0]].name : `${FOES[keys[0]].name} and others`, 1300);
+  });
+}
+function buildPartyPanel() {
+  const el = $('party'); el.innerHTML = '';
+  B.party.forEach(p => {
+    const r = document.createElement('div'); r.className = 'prow';
+    r.innerHTML = `<span class="pn">${esc(p.name)}</span><span><span class="lbl">HP</span><span class="hpv"></span></span><span><span class="lbl">MP</span><span class="mpv"></span></span><span class="atb"><i></i></span>`;
+    el.appendChild(r);
+    p.ui = { row: r, hp: r.querySelector('.hpv'), mp: r.querySelector('.mpv'), bar: r.querySelector('.atb i'), last: '' };
+  });
+}
+function updatePartyPanel() {
+  for (const p of B.party) {
+    const key = `${p.hp}|${p.mp}|${Math.floor(p.atb)}|${B.queue.includes(p)}|${B.actor === p}`;
+    if (key === p.ui.last) continue;
+    p.ui.last = key;
+    p.ui.hp.textContent = `${p.hp}/${p.maxhp}`; p.ui.mp.textContent = `${p.mp}`;
+    p.ui.bar.style.width = `${p.atb}%`;
+    p.ui.row.classList.toggle('ko', p.hp <= 0);
+    p.ui.row.classList.toggle('ready', p.hp > 0 && p.atb >= 100);
+    p.ui.row.classList.toggle('active', B.actor === p);
+  }
+}
+
+function updateBattle(dt) {
+  B.t += dt;
+  B.fx = B.fx.filter(f => B.t - f.t0 < f.dur);
+  if (B.over || B.busy || B.menu) return;
+  B.queue = B.queue.filter(p => p.hp > 0);
+  if (B.queue.length) { openCommand(B.queue[0]); return; }
+  for (const c of [...B.party, ...B.foes]) {
+    if (c.hp <= 0) continue;
+    c.atb = Math.min(100, c.atb + c.spd * (c.haste ? 1.6 : 1) * dt * 7);
+    if (c.atb >= 100) {
+      if (c.ally) { if (!B.queue.includes(c)) B.queue.push(c); }
+      else { B.busy = true; foeAct(c).then(afterAction); return; }
+    }
+  }
+}
+function afterAction() {
+  if (!B || B.over) return;
+  B.busy = false;
+  if (B.foes.every(f => f.hp <= 0)) endBattle('win');
+  else if (B.party.every(p => p.hp <= 0)) endBattle('lose');
+}
+async function endBattle(r) {
+  B.over = true;
+  B.actor = null; B.cursor = null; canvasPick = null;
+  $('cmdlist').innerHTML = ''; $('cmdtitle').textContent = '';
+  if (r === 'win') { banner('Victory!', 1100); await sleep(1100); }
+  else if (r === 'lose') { banner('Your party has fallen...', 1300); await sleep(1300); }
+  const hero = B.party.find(p => p.id === 'hero'), mira = B.party.find(p => p.id === 'mira');
+  S.hp = Math.max(1, hero.hp); S.mp = hero.mp;
+  if (mira) { S.mira.hp = Math.max(1, mira.hp); S.mira.mp = mira.mp; }
+  const xp = B.foes.reduce((a, f) => a + f.xp, 0);
+  const drops = { tonic: 0, ether: 0 };
+  if (r === 'win') B.foes.forEach(() => { if (Math.random() < .25) drops.tonic++; if (Math.random() < .1) drops.ether++; });
+  const res = B.res;
+  B = null; mode = 'explore';
+  $('battle').hidden = true; $('banner').hidden = true;
+  res({ r, xp, drops });
+}
+
+function openCommand(a) {
+  B.menu = true; B.actor = a;
+  commandFlow(a).then(() => {
+    if (!B || B.over) return;
+    B.menu = false; B.actor = null;
+    $('cmdtitle').textContent = ''; $('cmdlist').innerHTML = '';
+    afterAction();
+  });
+}
+function techReady() {
+  const h = B.party.find(p => p.id === 'hero'), m = B.party.find(p => p.id === 'mira');
+  return h && m && h.hp > 0 && m.hp > 0 && h.atb >= 100 && m.atb >= 100 && h.mp >= 4 && m.mp >= 4 && S.lv >= 2;
+}
+async function commandFlow(a) {
+  while (true) {
+    const cmds = [
+      { label: 'Attack' },
+      { label: 'Magic', dis: !a.spells.length },
+      ...(S.mira ? [{ label: 'Tech', sub: S.house ? HOUSES[S.house].tech : '', dis: !techReady() }] : []),
+      { label: 'Item' },
+      { label: 'Focus' },
+      { label: 'Flee', dis: !!B.opts.noFlee },
+    ];
+    $('cmdtitle').textContent = a.name;
+    const i = await menu($('cmdlist'), cmds);
+    if (i < 0) { if (B.queue.length > 1) { B.queue.push(B.queue.shift()); return; } continue; }
+    const c = cmds[i].label;
+    if (c === 'Attack') { const t = await pickTarget(aliveFoes()); if (!t) continue; await doAttack(a, t); }
+    else if (c === 'Magic') {
+      $('cmdtitle').textContent = `${a.name}: Magic`;
+      const list = a.spells.map(k => ({ label: SPELLS[k].name, sub: `${SPELLS[k].mp}`, dis: a.mp < SPELLS[k].mp || (SPELLS[k].tgt === 'other' && !aliveParty().some(p => p !== a)) }));
+      const j = await menu($('cmdlist'), list);
+      if (j < 0) continue;
+      const sp = SPELLS[a.spells[j]];
+      let tg = null;
+      if (sp.tgt === 'one') { tg = await pickTarget(aliveFoes()); if (!tg) continue; }
+      else if (sp.tgt === 'ally') { tg = await pickTarget(aliveParty()); if (!tg) continue; }
+      else if (sp.tgt === 'other') { tg = await pickTarget(aliveParty().filter(p => p !== a)); if (!tg) continue; }
+      await doSpell(a, sp, tg);
+    }
+    else if (c === 'Tech') { await doTech(); return; }
+    else if (c === 'Item') {
+      $('cmdtitle').textContent = 'Satchel';
+      const list = [{ k: 'tonic', label: 'Moonleaf Tonic', sub: `x${S.items.tonic}`, dis: !S.items.tonic }, { k: 'ether', label: 'Ether Drop', sub: `x${S.items.ether}`, dis: !S.items.ether }];
+      const j = await menu($('cmdlist'), list);
+      if (j < 0) continue;
+      const tg = await pickTarget(list[j].k === 'tonic' ? B.party : aliveParty());
+      if (!tg) continue;
+      await useItem(list[j].k, tg);
+    }
+    else if (c === 'Focus') await doFocus(a);
+    else if (c === 'Flee') {
+      if (Math.random() < .75) { banner('You slip away!'); await sleep(700); endBattle('flee'); return; }
+      banner('Couldn\'t get away!'); await sleep(700);
+    }
+    break;
+  }
+  a.atb = 0; a.haste = a.haste && Math.random() < .7;
+  B.queue = B.queue.filter(x => x !== a);
+}
+function pickTarget(cands) {
+  return new Promise(res => {
+    if (!cands.length) { res(null); return; }
+    let i = 0;
+    const title = $('cmdtitle'), prev = title.textContent;
+    const show = () => { B.cursor = cands[i]; title.textContent = `Target: ${cands[i].name}`; };
+    const fin = v => { pop(h); B.cursor = null; canvasPick = null; title.textContent = prev; res(v); };
+    const h = a => {
+      if (a === 'up' || a === 'left') { i = (i - 1 + cands.length) % cands.length; show(); }
+      else if (a === 'down' || a === 'right') { i = (i + 1) % cands.length; show(); }
+      else if (a === 'ok') fin(cands[i]);
+      else if (a === 'cancel') fin(null);
+    };
+    canvasPick = (x, y) => { let best = null, bd = 30; cands.forEach(c => { const d = Math.hypot(c.bx - x, c.by - y); if (d < bd) { bd = d; best = c; } }); if (best) fin(best); };
+    push(h); show();
+  });
+}
+
+function calcDmg(a, d, kind, pow = 0, elem = null) {
+  let v = kind === 'phys' ? a.atk * 2 - d.def : pow + a.mag * 1.6 - d.def * .5;
+  let mult = 1, tag = '';
+  if (elem && d.weak && d.weak.includes(elem)) { mult = 1.75; tag = 'weak'; }
+  else if (elem && d.resist && d.resist.includes(elem)) { mult = .5; tag = 'resist'; }
+  if (kind === 'phys' && Math.random() < .1) { mult *= 1.5; tag = 'crit'; }
+  return { d: Math.max(1, Math.round(v * mult * rnd(.9, 1.1))), tag };
+}
+const fx = o => B.fx.push({ t0: B.t, ...o });
+const num = (c, text, color, dy = 0) => fx({ type: 'num', x: c.bx, y: c.by - 14 + dy, text: String(text), color, dur: 1 });
+const ring = (c, color = '#ffffff') => fx({ type: 'ring', x: c.bx, y: c.by, color, dur: .4 });
+const spark = (c, color) => fx({ type: 'spark', x: c.bx, y: c.by, color, dur: .8 });
+const proj = (a, t, color) => fx({ type: 'proj', x0: a.bx, y0: a.by, x1: t.bx, y1: t.by, color, dur: .35 });
+function damage(t, d, tag, color = '#ffffff') {
+  t.hp = Math.max(0, t.hp - d); t.flash = B.t;
+  fx({ type: 'burst', x: t.bx, y: t.by, color, dur: .4 });
+  num(t, d, '#ffffff');
+  if (tag === 'weak') num(t, 'WEAK', '#ffd27a', -9);
+  else if (tag === 'resist') num(t, 'RESIST', '#a8b0d8', -9);
+  else if (tag === 'crit') num(t, 'CRITICAL', '#ff9a7a', -9);
+  if (t.hp <= 0) { t.deadT = B.t; t.atb = 0; }
+}
+async function doAttack(a, t) {
+  a.lungeT = B.t; await sleep(150);
+  const r = calcDmg(a, t, 'phys'); damage(t, r.d, r.tag);
+  await sleep(450);
+}
+async function doSpell(a, sp, tg) {
+  a.mp -= sp.mp; banner(sp.name, 900); ring(a, ELEM_COLOR[sp.elem] || ELEM_COLOR.heal);
+  await sleep(250);
+  if (sp.heal) {
+    const tgts = sp.tgt === 'allies' ? aliveParty() : [tg];
+    for (const t of tgts) { const amt = Math.round(sp.heal + a.mag * 1.2); t.hp = Math.min(t.maxhp, t.hp + amt); spark(t, ELEM_COLOR.heal); num(t, amt, ELEM_COLOR.heal); }
+    await sleep(650); return;
+  }
+  if (sp.haste) { tg.haste = true; tg.atb = 100; spark(tg, ELEM_COLOR.time); num(tg, 'HASTE', ELEM_COLOR.time); await sleep(650); return; }
+  const tgts = sp.tgt === 'all' ? aliveFoes() : [tg];
+  const col = ELEM_COLOR[sp.elem];
+  tgts.forEach(t => proj(a, t, col));
+  await sleep(350);
+  tgts.forEach(t => { const r = calcDmg(a, t, 'mag', sp.pow, sp.elem); damage(t, r.d, r.tag, col); });
+  await sleep(550);
+}
+async function doTech() {
+  const h = B.party.find(p => p.id === 'hero'), m = B.party.find(p => p.id === 'mira');
+  const house = HOUSES[S.house || 'tide'];
+  h.mp -= 4; m.mp -= 4;
+  banner(house.tech, 1100);
+  ring(h, ELEM_COLOR[house.elem]); ring(m, ELEM_COLOR.water);
+  await sleep(300);
+  const tgts = aliveFoes();
+  tgts.forEach(t => { proj(h, t, ELEM_COLOR[house.elem]); proj(m, t, ELEM_COLOR.water); });
+  await sleep(380);
+  tgts.forEach(t => {
+    const v = Math.round((40 + (h.mag + m.mag) * 1.2 - t.def * .3) * rnd(.95, 1.05));
+    damage(t, Math.max(1, v), '', '#ffffff');
+  });
+  if (S.house === 'thorn') aliveParty().forEach(p => { p.hp = Math.min(p.maxhp, p.hp + 25); spark(p, ELEM_COLOR.heal); });
+  await sleep(600);
+  [h, m].forEach(p => { p.atb = 0; });
+  B.queue = B.queue.filter(p => p !== h && p !== m);
+}
+async function useItem(k, t) {
+  S.items[k]--;
+  if (k === 'tonic') { banner('Moonleaf Tonic', 800); const was = t.hp; t.hp = Math.min(t.maxhp, t.hp + 50); if (was <= 0) t.deadT = null; spark(t, ELEM_COLOR.heal); num(t, t.hp - was, ELEM_COLOR.heal); }
+  else { banner('Ether Drop', 800); const was = t.mp; t.mp = Math.min(t.maxmp, t.mp + 15); spark(t, ELEM_COLOR.water); num(t, `+${t.mp - was} MP`, ELEM_COLOR.water); }
+  await sleep(700);
+}
+async function doFocus(a) {
+  if (a.maxmp === 0) { banner('You reach for magic. Nothing answers... yet.', 1500); await sleep(1300); return; }
+  const g = Math.max(3, Math.round(a.maxmp * .2)), was = a.mp;
+  a.mp = Math.min(a.maxmp, a.mp + g); banner('Focus', 700); spark(a, ELEM_COLOR.arcane); num(a, `+${a.mp - was} MP`, ELEM_COLOR.water);
+  await sleep(700);
+}
+async function foeAct(f) {
+  const tg = aliveParty(); f.atb = 0;
+  if (!tg.length) return;
+  if (f.key === 'warden' && !f.rewound && f.hp < f.maxhp * .4) {
+    f.rewound = true; banner('Rewind', 1100); spark(f, ELEM_COLOR.time); ring(f, ELEM_COLOR.time);
+    await sleep(450); const amt = 240; f.hp = Math.min(f.maxhp, f.hp + amt); num(f, amt, ELEM_COLOR.heal); await sleep(700); return;
+  }
+  const act = pick(f.acts), t = pick(tg), col = ELEM_COLOR[f.elem] || '#ffffff';
+  if (act === 'hit') { f.lungeT = B.t; await sleep(150); const r = calcDmg(f, t, 'phys'); damage(t, r.d, r.tag); await sleep(450); }
+  else if (act === 'spell') { banner(f.spellName || 'Hex', 900); ring(f, col); await sleep(250); proj(f, t, col); await sleep(350); const r = calcDmg(f, t, 'mag', 10, f.elem); damage(t, r.d, '', col); await sleep(450); }
+  else { banner(f.allName || 'Wave', 900); ring(f, col); await sleep(300); tg.forEach(p => proj(f, p, col)); await sleep(350); tg.forEach(p => { const r = calcDmg(f, p, 'mag', 8, f.elem); damage(p, Math.max(1, Math.round(r.d * .7)), '', col); }); await sleep(500); }
+}
+
+async function fight(keys, opts = {}) {
+  lock++;
+  try {
+    const out = await startBattle(keys, opts);
+    if (out.r === 'win') await rewards(out.xp, out.drops);
+    else if (out.r === 'lose') await defeat();
+    save();
+    return out.r;
+  } finally { lock--; }
+}
+async function rewards(xp, drops) {
+  const parts = [`Victory! ${xp} XP.`];
+  if (drops.tonic) parts.push(`Found ${drops.tonic} Moonleaf Tonic${drops.tonic > 1 ? 's' : ''}.`);
+  if (drops.ether) parts.push(`Found ${drops.ether} Ether Drop${drops.ether > 1 ? 's' : ''}.`);
+  S.items.tonic += drops.tonic; S.items.ether += drops.ether;
+  await say(null, parts.join(' '));
+  if (S.lv >= MAXLV) return;
+  S.xp += xp;
+  while (S.lv < MAXLV && S.xp >= XP[S.lv + 1]) {
+    const before = heroSpells(S.lv, S.house), oldRank = rankOf(S.lv);
+    S.lv++;
+    restoreParty();
+    const learned = heroSpells(S.lv, S.house).filter(k => !before.includes(k));
+    let msg = `${S.name} reached Level ${S.lv}!`;
+    if (learned.length) msg += ` Learned ${learned.map(k => SPELLS[k].name).join(' and ')}.`;
+    await say(null, msg);
+    if (rankOf(S.lv) !== oldRank) await say(null, `New rank: ${rankOf(S.lv)}.`);
+    if (MEMORIES[S.lv] && !S.memories.includes(S.lv)) { S.memories.push(S.lv); await say('A memory returns', MEMORIES[S.lv], { memory: true }); }
+    if (S.lv === 5 && S.flags.mira && !S.flags.archiveOpen) setGoal('Examine the Archive seal at the north wall of the Library.');
+    if (S.lv === MAXLV && !S.flags.archwizard) { S.flags.archwizard = true; setGoal('You are an Archwizard. Wander Aldermere as long as you like.'); await finale(); }
+  }
+}
+async function defeat() {
+  await fadeOut();
+  restoreParty();
+  loadMap('courtyard', 9, 9, 'up');
+  await fadeIn();
+  await say('Nurse Hollis', 'Back with us? Someone carried you out in a heap. It happens to every first-year at least once.');
+  await say('Nurse Hollis', 'You are patched up. Try not to do it again before lunch. The fountain is there if you need it.');
+}
+
+// ---------------------------------------------------------------- render
+const STARS = Array.from({ length: 80 }, () => [Math.random() * W, Math.random() * 150, Math.random()]);
+function drawTitle(t) {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#060716'); g.addColorStop(1, '#1d1e4a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  STARS.forEach(([x, y, b]) => { const a = .3 + .7 * Math.abs(Math.sin(t * (.4 + b) + x)); ctx.fillStyle = `rgba(255,248,225,${a * .85})`; ctx.fillRect(x | 0, y | 0, 1, 1); });
+  ctx.fillStyle = '#f3ecd0'; ctx.beginPath(); ctx.arc(268, 38, 13, 0, 7); ctx.fill();
+  ctx.fillStyle = '#0a0b20'; ctx.beginPath(); ctx.arc(274, 34, 12, 0, 7); ctx.fill();
+  const towers = [[26, 128, 22], [64, 140, 30], [112, 104, 26], [160, 78, 18], [206, 112, 28], [252, 134, 34], [296, 124, 20]];
+  ctx.fillStyle = '#0a0a1a';
+  ctx.fillRect(0, 176, W, 48);
+  towers.forEach(([x, y, w]) => {
+    ctx.fillRect(x - w / 2, y, w, H - y);
+    ctx.beginPath(); ctx.moveTo(x - w / 2 - 3, y); ctx.lineTo(x, y - w * .9); ctx.lineTo(x + w / 2 + 3, y); ctx.fill();
+  });
+  towers.forEach(([x, y, w], i) => {
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 2; c++) {
+      const on = Math.sin(t * .7 + i * 3 + r * 5 + c) > -.2;
+      if (!on) continue;
+      ctx.fillStyle = 'rgba(242,200,106,.85)'; ctx.fillRect(x - w / 4 + c * (w / 2) - 1, y + 14 + r * 16, 2, 4);
+    }
+    ctx.fillStyle = '#0a0a1a';
+  });
+  const cx = 160, cy = 90;
+  ctx.fillStyle = '#e8dcb0'; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#2a1e10'; ctx.lineWidth = 1; ctx.beginPath(); const a = -t * 1.4;
+  ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * 5, cy + Math.sin(a) * 5); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a / 12) * 3, cy + Math.sin(a / 12) * 3); ctx.stroke();
+}
+function renderFx() {
+  for (const f of B.fx) {
+    const p = Math.min(1, (B.t - f.t0) / f.dur);
+    if (f.type === 'proj') {
+      const x = f.x0 + (f.x1 - f.x0) * p, y = f.y0 + (f.y1 - f.y0) * p - Math.sin(p * Math.PI) * 10;
+      px(x - 2, y - 2, 4, 4, f.color); ctx.globalAlpha = .5; px(x - (f.x1 - f.x0) * .06 - 1, y - 1, 2, 2, f.color); ctx.globalAlpha = 1;
+    } else if (f.type === 'burst') {
+      ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.color; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(f.x, f.y, 3 + p * 12, 0, 7); ctx.stroke();
+      for (let i = 0; i < 6; i++) { const a = i * 1.047; px(f.x + Math.cos(a) * p * 14, f.y + Math.sin(a) * p * 14, 2, 2, f.color); }
+      ctx.globalAlpha = 1;
+    } else if (f.type === 'ring') {
+      ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.color; ctx.beginPath(); ctx.arc(f.x, f.y, 4 + p * 10, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
+    } else if (f.type === 'spark') {
+      ctx.globalAlpha = 1 - p;
+      for (let i = 0; i < 7; i++) px(f.x + Math.cos(i * 2.4) * 7, f.y + 6 - p * 18 - (i % 3) * 3, 1, 2, f.color);
+      ctx.globalAlpha = 1;
+    } else if (f.type === 'num') {
+      const y = f.y - Math.min(1, p * 3) * 6;
+      ctx.globalAlpha = p > .75 ? (1 - p) * 4 : 1;
+      ctx.font = '600 10px "Pixelify Sans", monospace'; ctx.textAlign = 'center';
+      ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.strokeText(f.text, f.x, y); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, y);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+function drawCombatant(c) {
+  if (c.hp <= 0 && !c.ally) {
+    if (c.deadT == null) return;
+    const p = (B.t - c.deadT) / .5; if (p >= 1) return; ctx.globalAlpha = 1 - p;
+  }
+  if (c.flash != null && B.t - c.flash < .3 && ((B.t * 30) | 0) % 2 === 0) { ctx.globalAlpha = 1; return; }
+  let ox = 0;
+  if (c.lungeT != null) { const p = (B.t - c.lungeT) / .3; if (p < 1) ox = Math.sin(p * Math.PI) * 18 * (c.ally ? -1 : 1); }
+  if (c.ally) {
+    const look = c.id === 'hero' ? heroLook() : LOOKS.mira;
+    if (c.hp <= 0) { px(c.bx - 8, c.by + 2, 12, 5, look.robe); px(c.bx + 3, c.by + 1, 5, 5, look.skin); px(c.bx + 4, c.by, 5, 2, look.hair); }
+    else drawPerson(c.bx - 8 + ox, c.by - 10, { ...look, dir: 'left', step: c.atb >= 100 ? ((B.t * 4) | 0) % 2 : 0 });
+  } else drawFoe(c.art, c.bx + ox, c.by, B.t, c.key === 'echo' ? .75 : 1);
+  ctx.globalAlpha = 1;
+}
+function drawCursor(c) {
+  const bob = Math.sin(B.t * 8) * 1.5;
+  const top = c.ally ? c.by - 18 : c.by - (c.art === 'warden' ? (c.key === 'echo' ? 30 : 38) : 20);
+  ctx.fillStyle = '#e6c36c';
+  ctx.beginPath(); ctx.moveTo(c.bx - 4, top - 6 + bob); ctx.lineTo(c.bx + 4, top - 6 + bob); ctx.lineTo(c.bx, top + bob); ctx.fill();
+  if (!c.ally) { px(c.bx - 12, c.by + 16, 24, 3, '#0a0d33'); px(c.bx - 12, c.by + 16, 24 * c.hp / c.maxhp, 3, c.hp / c.maxhp > .35 ? '#86e39a' : '#ff8270'); }
+}
+function render(t) {
+  if (mode === 'title' || !MAP) { drawTitle(t); return; }
+  for (let y = 0; y < 14; y++) for (let x = 0; x < 20; x++) drawTile(x, y, t);
+  const ents = visibleNPCs().map(n => ({ y: n.y * TS, draw: () => drawNPC(n, t) }));
+  if (mode !== 'battle') {
+    FIELD.forEach(f => { const [fx2, fy2] = fPos(f); ents.push({ y: fy2, draw: () => drawFoe(f.art, fx2 + 8, fy2 + 6, t, .5) }); });
+    const [ppx, ppy] = pPos();
+    ents.push({ y: ppy, draw: () => drawPerson(ppx, ppy - 4, { ...heroLook(), dir: P.dir, step: P.moving ? P.step : 0 }) });
+  }
+  ents.sort((a, b) => a.y - b.y).forEach(e => e.draw());
+  if (MAP.dark) {
+    let lx = 160, ly = 100, r1 = 150;
+    if (mode !== 'battle') { const [ppx, ppy] = pPos(); lx = ppx + 8; ly = ppy + 6; r1 = 92; }
+    const g = ctx.createRadialGradient(lx, ly, 18, lx, ly, r1);
+    g.addColorStop(0, 'rgba(6,4,16,0)'); g.addColorStop(1, 'rgba(6,4,16,.86)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  if (mode === 'battle' && B) {
+    ctx.fillStyle = 'rgba(8,8,28,.42)'; ctx.fillRect(0, 0, W, H);
+    [...B.foes, ...B.party].sort((a, b) => a.by - b.by).forEach(drawCombatant);
+    if (B.cursor) drawCursor(B.cursor);
+    renderFx();
+    updatePartyPanel();
+  }
+}
+
+// ---------------------------------------------------------------- flow
+function askName() {
+  return new Promise(res => {
+    const box = $('namebox'), inp = $('nameinput');
+    box.hidden = false; inp.value = '';
+    setTimeout(() => inp.focus(), 60);
+    const block = () => {};
+    push(block);
+    $('nameform').onsubmit = e => {
+      e.preventDefault();
+      const v = (inp.value || '').trim().replace(/\s+/g, ' ').slice(0, 12) || 'Rowan';
+      pop(block); box.hidden = true; inp.blur(); res(v);
+    };
+  });
+}
+async function newGame() {
+  const name = await askName();
+  S = newState(name);
+  $('fade').classList.add('on');
+  $('title').hidden = true;
+  lock++;
+  await sleep(350);
+  await say(null, 'Cold stone under your cheek. Somewhere above you, a bell is ringing nine.');
+  await say(null, 'You try to remember how you got here. There is nothing there. No home. No face. No yesterday.');
+  await say(null, `Only a name, ${name}. Even that feels borrowed.`);
+  loadMap('courtyard', 9, 9, 'up');
+  await fadeIn();
+  toast(MAP.name);
+  await sleep(900);
+  await say(name, '...Where am I?');
+  await say('Prefect Aldous', 'You! Yes, you, lying on the flagstones. Up you get. Orientation started ten minutes ago. Great Hall, north doors. Go!');
+  lock--;
+  save();
+}
+async function titleFlow() {
+  mode = 'title'; MAP = null; lock = 0;
+  $('title').hidden = false; $('dialog').hidden = true; $('battle').hidden = true; $('fade').classList.remove('on');
+  const saved = loadSave();
+  const i = await menu($('titlemenu'), [{ label: 'Begin your first day' }, { label: 'Continue', dis: !saved }], { start: saved ? 1 : 0, noCancel: true });
+  if (i === 1 && saved) { S = saved; $('title').hidden = true; await enterMap(S.map, S.x, S.y, S.dir); }
+  else await newGame();
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (mode === 'explore' && MAP && P) updateExplore(dt);
+  else if (mode === 'battle' && B) updateBattle(dt);
+  render(now / 1000);
+  updateHUD();
+  requestAnimationFrame(loop);
+}
+
+const hot = window.claude && window.claude.hot;
+if (hot && typeof hot.snapshot === 'function') hot.snapshot(() => (S && mode === 'explore' ? { save: JSON.stringify(S) } : {}));
+function boot(data) {
+  requestAnimationFrame(loop);
+  if (data && data.save) {
+    try { S = JSON.parse(data.save); $('title').hidden = true; enterMap(S.map, S.x, S.y, S.dir); return; } catch (e) { /* fall through to title */ }
+  }
+  titleFlow();
+}
+if (hot && typeof hot.ready === 'function') hot.ready(boot); else boot((hot && hot.data) || {});
+})();
+</script>
