@@ -86,6 +86,7 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 .pface.on { display: inline-block; }
 .prow .pn { display: flex; align-items: center; }
 #say { white-space: pre-line; }
+.gi { display: inline-block; width: 1.3em; height: 1.3em; margin-right: .45em; vertical-align: -.3em; flex: none; background: url("assets/gear48.png") no-repeat; background-size: 600% 500%; }
 .ii { display: inline-block; width: 1.3em; height: 1.3em; margin-right: .45em; vertical-align: -.3em; flex: none; background: url("assets/pack/items24.png") no-repeat; background-size: 800% 800%; image-rendering: pixelated; }
 #stage, #stage img { -webkit-touch-callout: none; -webkit-user-drag: none; }
 #title h1 img { pointer-events: none; display: block; width: min(64vw, 820px); width: min(64cqw, 820px); height: auto; image-rendering: pixelated; filter: drop-shadow(0 3px 0 rgba(0,0,0,.5)); }
@@ -631,7 +632,12 @@ const AVAILABLE = [
   'title_bg.png', 'logo.png', 'btn_dpad.png', 'btn_a.png', 'btn_b.png', 'btn_menu.png',
   ...['aldous', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony', 'warden', 'nurse'].map(id => `portrait_${id}.png`),
   ...['aldous', 'thorne', 'brannoch', 'quillon', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony'].map(id => `npc_${id}.png`),
-  ...['dummy', 'imp', 'broom', 'wisp', 'toad', 'slime', 'emberslime', 'moth', 'shroom', 'scarab', 'gargoyle', 'shade', 'bone', 'apprentice', 'cgolem', 'echo'].map(a => `foe_${a}.png`),
+  ...['dummy', 'imp', 'broom', 'wisp', 'toad', 'slime', 'emberslime', 'moth', 'shroom', 'scarab', 'gargoyle', 'shade', 'bone', 'apprentice', 'cgolem', 'echo', 'warden'].map(a => `foe_${a}.png`),
+  ...['cat', 'rabbit', 'owl', 'sprout'].map(f => `fam_${f}.png`),
+  ...['Treasure_Chest', 'Treasure_Chest_Open', 'Student_Bed', 'Nightstand', 'Bulletin_Board', 'Magic_Mirror', 'Wood_Desk', 'Study_Chair', 'Potion_Shelf', 'Cauldron', 'Royal_Banner', 'Wishing_Well',
+    'Astrolabe', 'Grand_Globe', 'Spell_Altar', 'Stained_Glass', 'Academy_Flag', 'Duel_Arena_Glyph', 'Lantern', 'Book_Stack', 'Crystal_Ball', 'Potted_Plant', 'Barrel', 'Scroll_Rack'].map(n => `prop_${n}.png`),
+  ...['Fire_Burst', 'Water_Splash', 'Nature_Bloom', 'Wind_Slash', 'Arcane_Rune', 'Star_Shower', 'Dark_Pulse', 'Time_Stop', 'Healing_Aura', 'Haste', 'Familiar_Summon', 'Barrier'].map(n => `fx_${n}.png`),
+  'gear48.png',
 ];
 // Sprites from the Magic Academy Art Pack (assets/pack/, native 1x pixel art drawn at half size so each pixel is exact)
 const PACK = {
@@ -643,6 +649,21 @@ const PACK = {
 };
 const PACK_FILES = [...Object.entries(PACK).flatMap(([k, list]) => list.map(n => `${k}_${n}.png`)), 'items24.png'];
 const packImg = (kind, name) => IMG[`pack/${kind}_${name}.png`];
+// HD art from assets/ first, the pack's version second
+const propImg = name => IMG[`prop_${name}.png`] || packImg('prop', name);
+const FX_HD = { Blazing_Sigil: 'Arcane_Rune' }; // pack effects with no HD sheet of their own
+const fxImg = name => IMG[`fx_${FX_HD[name] || name}.png`] || packImg('fx', name === 'Haste' ? 'Time_Stop' : name);
+// The HD file that replaces a pack file, so the pack copy need not be downloaded (true: nothing uses it)
+function packHD(f) {
+  if (f === 'items24.png') return Object.values(GEAR).every(g => g.icon in GEAR_ICONS) && 'gear48.png';
+  const [, kind, name] = f.match(/^(\w+?)_(.+)\.png$/);
+  const key = (obj, test) => Object.keys(obj).find(k => test(obj[k]));
+  if (kind === 'char') { const id = key(NPC_CHAR, v => v === name); return id ? `npc_${id}.png` : true; }
+  if (kind === 'foe') { const art = key(FOE_PACK, v => v[0] === name); return art && Object.values(FOES).some(x => x.art === art) ? `foe_${art}.png` : true; }
+  if (kind === 'fam') return `fam_${key(FAMS, v => v.sprite === name)}.png`;
+  if (kind === 'fx') return `fx_${FX_HD[name] || name}.png`;
+  return `prop_${name}.png`;
+}
 const IMG = {};
 const HERO_TINTS = {};
 function loadAssets() {
@@ -653,7 +674,7 @@ function loadAssets() {
     im.src = src;
   };
   for (const f of AVAILABLE) load('assets/' + f, f);
-  for (const f of PACK_FILES) load('assets/pack/' + f, 'pack/' + f);
+  for (const f of PACK_FILES) { const hd = packHD(f); if (hd !== true && !AVAILABLE.includes(hd)) load('assets/pack/' + f, 'pack/' + f); }
 }
 function onAsset(f, im) {
   if (f === 'hero_field.png') {
@@ -665,6 +686,7 @@ function onAsset(f, im) {
   if (f === 'ui_window.png') { root.style.setProperty('--win-skin', `url("assets/${f}")`); root.classList.add('skinned'); }
   if (f === 'icons.png') { root.style.setProperty('--icons', `url("assets/${f}")`); root.classList.add('has-icons'); }
   if (f === 'crests.png') { root.style.setProperty('--crests', `url("assets/${f}")`); root.classList.add('has-crests'); }
+  if (f === 'gear48.png') root.classList.add('has-gear');
   if (f === 'logo.png') { const h = document.querySelector('#title h1'); h.innerHTML = '<img src="assets/logo.png" alt="Aldermere: The Unwritten Student">'; $('title').classList.add('has-logo'); }
   if (/^btn_/.test(f) && ['btn_dpad.png', 'btn_a.png', 'btn_b.png', 'btn_menu.png'].every(n => IMG[n])) root.classList.add('pad-skinned');
 }
@@ -765,7 +787,13 @@ const pop = h => { const i = handlers.lastIndexOf(h); if (i >= 0) handlers.splic
 
 // Equipment: one of each slot. Icons come from the pack's 24px item atlas.
 const ITEM_ICONS = ['Red_Potion', 'Blue_Potion', 'Green_Potion', 'Antidote', 'Mana_Tonic', 'Elixir', 'Healing_Herb', 'Magic_Leaf', 'Flower_Petal', 'Mana_Crystal', 'Fire_Stone', 'Ice_Stone', 'Thunder_Stone', 'Rune_Stone', 'Magic_Key', 'Silver_Key', 'Golden_Key', 'Academy_Badge', 'Guild_Crest', 'Star_Compass', 'Novice_Wand', 'Oak_Wand', 'Master_Wand', 'Magic_Staff', 'Rapier', 'Short_Sword', 'Long_Sword', 'Dagger', 'Training_Shield', 'Rune_Shield', 'Novice_Robe', 'Scholar_Robe', 'Academy_Hat', 'Moon_Hat', 'Ruby_Ring', 'Sapphire_Ring', 'Amethyst_Ring', 'Magic_Amulet', 'Grimoire', 'Spell_Scroll', 'Library_Pass', 'Student_Notes', 'Treasure_Map', 'Sealed_Letter', 'Ancient_Tome', 'Phoenix_Feather', 'Creature_Egg', 'Summon_Sigil', 'Monster_Fang', 'Iron_Ore', 'Moon_Blossom', 'Mystery_Seed', 'Copper_Coin', 'Gold_Coin', 'Star_Token', 'Training_Dummy_Token', 'Duel_Medal', 'Locket', 'Clockwork_Gear', 'Magic_Lantern', 'Quest_Marker', 'Exclamation_Alert', 'Small_Heart', 'Mana_Star'];
-const itemIcon = name => { const i = ITEM_ICONS.indexOf(name); return i < 0 ? '' : `<i class="ii" style="background-position:${(i % 8) * 100 / 7}% ${Math.floor(i / 8) * 100 / 7}%"></i>`; };
+// assets/gear48.png: 6 x 5 grid of 48px icons. Gear whose pack icon has an HD version is drawn from it.
+const GEAR_ICONS = { Novice_Wand: 0, Oak_Wand: 1, Master_Wand: 5, Novice_Robe: 6, Scholar_Robe: 9, Moon_Hat: 11, Sapphire_Ring: 12, Magic_Amulet: 13, Academy_Badge: 17, Ruby_Ring: 24, Amethyst_Ring: 25, Duel_Medal: 26 };
+const itemIcon = name => {
+  const g = GEAR_ICONS[name];
+  if (g != null && IMG['gear48.png']) return `<i class="gi" style="background-position:${(g % 6) * 20}% ${Math.floor(g / 6) * 25}%"></i>`;
+  const i = ITEM_ICONS.indexOf(name); return i < 0 ? '' : `<i class="ii" style="background-position:${(i % 8) * 100 / 7}% ${Math.floor(i / 8) * 100 / 7}%"></i>`;
+};
 const SLOTS = { wand: 'Wand', robe: 'Robe', ring: 'Ring', charm: 'Charm' };
 const GEAR = {
   novice_wand: { name: 'Novice Wand', slot: 'wand', icon: 'Novice_Wand' },
@@ -773,7 +801,7 @@ const GEAR = {
   master_wand: { name: 'Master Wand', slot: 'wand', icon: 'Master_Wand', mag: 10, atk: 4 },
   novice_robe: { name: 'Novice Robe', slot: 'robe', icon: 'Novice_Robe' },
   scholar_robe: { name: 'Scholar Robe', slot: 'robe', icon: 'Scholar_Robe', def: 4, maxhp: 15 },
-  moon_hat: { name: 'Moon Hat', slot: 'robe', icon: 'Moon_Hat', def: 2, mag: 3, maxmp: 6 },
+  moon_hat: { name: 'Moonweave Cloak', slot: 'robe', icon: 'Moon_Hat', def: 2, mag: 3, maxmp: 6 },
   ruby_ring: { name: 'Ruby Ring', slot: 'ring', icon: 'Ruby_Ring', atk: 4 },
   sapphire_ring: { name: 'Sapphire Ring', slot: 'ring', icon: 'Sapphire_Ring', maxmp: 10 },
   amethyst_ring: { name: 'Amethyst Ring', slot: 'ring', icon: 'Amethyst_Ring', spd: 2, mag: 2 },
@@ -939,6 +967,7 @@ function drawPortrait(id, face) {
   if (sheet) { const m = walkerMeta(sheet); pc.drawImage(sheet, m.fw * .14, 0, m.fw * .72, m.fw * .72, 0, 0, N, N); return; }
   withCtx(pc, () => {
     if (id === 'warden') { pc.setTransform(2.4, 0, 0, 2.4, 0, 0); drawFoe('warden', 26.6, 42, t, 1); }
+    else if (id === 'lantern' && IMG['prop_Lantern.png']) pc.drawImage(IMG['prop_Lantern.png'], 8, 8, N - 16, N - 16);
     else if (id === 'lantern') { pc.setTransform(7, 0, 0, 7, 0, 0); drawNPC({ kind: 'lantern', x: 0, y: 0 }, t, 1, 5); }
     else {
       pc.setTransform(11, 0, 0, 11, 0, 0);
@@ -1262,6 +1291,12 @@ function drawNPC(n, t, ox = 0, oy = 0) {
     }
     case 'lantern': {
       const glow = S && S.house ? HOUSES[S.house].color : '#f2e6c9';
+      const im = IMG['prop_Lantern.png'];
+      if (im) { // the HD lantern, with a halo in the colour of your House once you are sorted
+        ctx.globalAlpha = .22 + .12 * Math.sin(t * 4); fill(glow); ctx.beginPath(); ctx.arc(x + 8, y + 8, 11, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.drawImage(im, x - 8, y - 10, 32, 32);
+        break;
+      }
       px(x + 7, y - 2, 1, 4, '#8a8a9a'); px(x + 3, y + 2, 10, 2, '#7a6a3a'); px(x + 4, y + 4, 8, 9, '#5a4a2a');
       ctx.globalAlpha = .75 + .25 * Math.sin(t * 4); px(x + 5, y + 5, 6, 7, glow); ctx.globalAlpha = 1;
       px(x + 3, y + 13, 10, 2, '#7a6a3a'); px(x + 3, y + 18, 10, 2, 'rgba(0,0,0,.25)');
@@ -1312,13 +1347,15 @@ const npcAt = (x, y) => visibleNPCs().find(n => n.x === x && n.y === y);
 const mapProps = () => [...(MAP.props || []), ...Object.entries(CHESTS).filter(([, c]) => c.map === MAPID).map(([id, c]) => ({ x: c.x, y: c.y, p: 'Treasure_Chest', chest: id, talk: () => openChest(id) }))];
 const propAt = (x, y) => mapProps().find(o => !o.deco && o.x === x && o.y === y);
 function drawProp(o, t) {
-  const im = packImg('prop', o.p);
+  const opened = o.chest && S.chests[o.chest];
+  const hdOpen = opened && IMG['prop_Treasure_Chest_Open.png'];
+  const im = hdOpen || propImg(o.p);
   const x = o.x * TS, y = o.y * TS;
   if (!im) { px(x + 3, y + 4, 10, 10, o.chest ? '#7a4e2a' : '#3a3f66'); if (o.chest) px(x + 3, y + 8, 10, 1, '#f5a93a'); return; }
-  if (o.chest && S.chests[o.chest]) ctx.globalAlpha = .5;
+  if (opened && !hdOpen) ctx.globalAlpha = .5;
   ctx.drawImage(im, x - 8, o.floor ? y - 8 : (o.deco ? y - 6 : y - 14), 32, 32);
   ctx.globalAlpha = 1;
-  if (o.chest && !S.chests[o.chest] && Math.sin(t * 3 + o.x) > .85) px(x + 11, y - 4, 2, 2, '#f5a93a');
+  if (o.chest && !opened && Math.sin(t * 3 + o.x) > .85) px(x + 11, y - 4, 2, 2, '#f5a93a');
 }
 
 async function talkHob() {
@@ -1516,7 +1553,7 @@ async function talkBrannoch() {
   if (r === 'win') {
     S.flags['trial' + i] = true; S.items.tonic++;
     await say('Instructor Brannoch', 'Well fought! Here, have a Moonleaf Tonic. You have earned it.', { face: 'happy' });
-    if (i === 1 && !S.bag.includes('moon_hat')) { S.bag.push('moon_hat'); await say(null, `Brannoch also hands you a Moon Hat (${gearText(GEAR.moon_hat)}). "Found it in the observatory. Suits you better than the golem."`); }
+    if (i === 1 && !S.bag.includes('moon_hat')) { S.bag.push('moon_hat'); await say(null, `Brannoch also hands you a Moonweave Cloak (${gearText(GEAR.moon_hat)}). "Found it in the observatory. Suits you better than the golem."`); }
     if (i === 2 && !S.bag.includes('amethyst_ring')) { S.bag.push('amethyst_ring'); await say(null, `Brannoch presses an Amethyst Ring (${gearText(GEAR.amethyst_ring)}) into your hand. "For surviving that. Barely."`); }
   }
 }
@@ -1972,7 +2009,7 @@ const proj = (a, t, color, elem) => fx({ type: 'proj', x0: a.bx, y0: a.by, x1: t
 const ELEM_FX = { fire: 'Fire_Burst', water: 'Water_Splash', earth: 'Nature_Bloom', air: 'Wind_Slash', arcane: 'Arcane_Rune', light: 'Star_Shower', shadow: 'Dark_Pulse', time: 'Time_Stop' };
 function damage(t, d, tag, color = '#dfe5df', elem) {
   t.hp = Math.max(0, t.hp - d); t.flash = B.t;
-  if (elem && ELEM_FX[elem] && packImg('fx', ELEM_FX[elem])) fx({ type: 'strip', name: ELEM_FX[elem], x: t.bx, y: t.by - 2, dur: .55 });
+  if (elem && ELEM_FX[elem] && fxImg(ELEM_FX[elem])) fx({ type: 'strip', name: ELEM_FX[elem], x: t.bx, y: t.by - 2, dur: .55 });
   else fx({ type: 'burst', x: t.bx, y: t.by, color, elem, dur: .4 });
   num(t, d, '#ffffff');
   if (tag === 'weak') num(t, 'WEAK', '#f5a93a', -9);
@@ -1993,7 +2030,7 @@ async function doSpell(a, sp, tg) {
     for (const t of tgts) { const amt = Math.round(sp.heal + a.mag * 1.2); t.hp = Math.min(t.maxhp, t.hp + amt); spark(t, ELEM_COLOR.heal); fx({ type: 'strip', name: 'Healing_Aura', x: t.bx, y: t.by - 4, dur: .6 }); num(t, amt, ELEM_COLOR.heal); }
     await sleep(650); return;
   }
-  if (sp.haste) { tg.haste = true; tg.atb = 100; spark(tg, ELEM_COLOR.time); fx({ type: 'strip', name: 'Time_Stop', x: tg.bx, y: tg.by - 4, dur: .6 }); num(tg, 'HASTE', ELEM_COLOR.time); await sleep(650); return; }
+  if (sp.haste) { tg.haste = true; tg.atb = 100; spark(tg, ELEM_COLOR.time); fx({ type: 'strip', name: 'Haste', x: tg.bx, y: tg.by - 4, dur: .6 }); num(tg, 'HASTE', ELEM_COLOR.time); await sleep(650); return; }
   const tgts = sp.tgt === 'all' ? aliveFoes() : [tg];
   const col = ELEM_COLOR[sp.elem];
   tgts.forEach(t => proj(a, t, col, sp.elem));
@@ -2139,7 +2176,7 @@ function drawFxSprite(f, p) {
 function renderFx() {
   for (const f of B.fx) {
     const p = Math.min(1, (B.t - f.t0) / f.dur);
-    if (f.type === 'strip') { const im = packImg('fx', f.name); if (im) ctx.drawImage(im, Math.min(7, Math.floor(p * 8)) * 48, 0, 48, 48, Math.round(f.x - 24), Math.round(f.y - 24), 48, 48); continue; }
+    if (f.type === 'strip') { const im = fxImg(f.name), s = im && im.height; if (im) ctx.drawImage(im, Math.min(7, Math.floor(p * 8)) * s, 0, s, s, Math.round(f.x - 24), Math.round(f.y - 24), 48, 48); continue; }
     if ((f.type === 'proj' || f.type === 'burst') && drawFxSprite(f, p)) continue;
     if (f.type === 'proj') {
       const x = f.x0 + (f.x1 - f.x0) * p, y = f.y0 + (f.y1 - f.y0) * p - Math.sin(p * Math.PI) * 10;
@@ -2259,10 +2296,18 @@ function render(t) {
 function followers() {
   const list = [];
   if (S.mira && S.flags.mira) list.push({ draw: (x, y, dir, mv, t) => drawWalker(npcSheet('mira'), x, y + 12, dir, mv, t) || drawPerson(x, y - 4, { ...LOOKS.mira, dir }) });
-  if (S.familiar) list.push({ draw: (x, y, dir, mv, t) => drawFamiliar(x + 8, y + 10, t) });
+  if (S.familiar) list.push({ draw: (x, y, dir, mv, t) => drawFamiliar(x + 8, y + 10, t, 1, mv) });
   return list;
 }
-function drawFamiliar(cx, cy, t, scale = 1) {
+// HD sheets (assets/fam_<id>.png): 4 frames, 2 idle then 2 moving. Pack sheets: 8 frames of 32px.
+function drawFamiliar(cx, cy, t, scale = 1, moving = false) {
+  const hd = S.familiar && IMG[`fam_${S.familiar}.png`];
+  if (hd) {
+    const f = hd.height, d = 20 * scale, col = (moving ? 2 : 0) + (Math.floor(t * (moving ? 8 : 2)) % 2);
+    px(cx - 6 * scale, cy + 5 * scale, 12 * scale, 2, 'rgba(0,0,0,.28)');
+    ctx.drawImage(hd, col * f, 0, f, f, Math.round(cx - d / 2), Math.round(cy - d + 7 * scale), d, d);
+    return;
+  }
   const im = S.familiar && packImg('fam', FAMS[S.familiar].sprite);
   if (!im) return;
   const d = 16 * scale, bob = Math.sin(t * 5) * 1.2;

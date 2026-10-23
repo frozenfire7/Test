@@ -19,10 +19,13 @@ To clean up a single ChatGPT sheet before adding it, run `python3 ../tools/proce
 | `mira_field.png` ✅ | Same layout as the hero | Mira on the map and in battle |
 | `npc_<id>.png` ✅ | Same layout as the hero. Ids: `thorne`, `aldous`, `brannoch`, `quillon`, `pell`, `juniper`, `tobias`, `ghost`, `hob`, `cassius`, `chef`, `bryony` | Named NPCs (Cassius also in his duel) |
 | `portrait_<id>.png` ✅ | Square cells side by side: neutral, happy, shocked, sad (128px each). Ids as above plus `hero`, `mira`, `warden`, `nurse` | Dialogue box portrait and battle panel face |
-| `foe_<art>.png` ✅ all but `warden` | 4 cols × 2 rows of square frames: 64px for small foes, 96px for big ones (`gargoyle`, `shade`, `bone`, `apprentice`, `cgolem`, `echo`). Row 1 idle ×4; row 2 attack ×3, then hurt. Arts: `dummy`, `imp`, `broom`, `wisp`, `toad`, `slime`, `emberslime`, `moth`, `shroom`, `scarab`, `gargoyle`, `shade`, `bone`, `apprentice`, `cgolem`, `echo`, `warden` | Enemies on the map and in battle. Built from `source/foes_[a-d]_gen.png` (one foe per row: 4 idle poses, 2 attack poses) |
+| `foe_<art>.png` ✅ | 4 cols × 2 rows of square frames: 64px for small foes, 96px for big ones (`gargoyle`, `shade`, `bone`, `apprentice`, `cgolem`, `echo`); `foe_warden.png` uses 128px. Row 1 idle ×4; row 2 attack ×3, then hurt. Arts: `dummy`, `imp`, `broom`, `wisp`, `toad`, `slime`, `emberslime`, `moth`, `shroom`, `scarab`, `gargoyle`, `shade`, `bone`, `apprentice`, `cgolem`, `echo`, `warden` | Enemies on the map and in battle. Built from `source/foes_[a-d]_gen.png` (one foe per row: 4 idle poses, 2 attack poses) |
 | `tiles.png` ✅ | 6 cols × 4 rows of 32×32 tiles, in the order below | Every map |
 | `tile_fountain.png` ✅ | 64×64 | Courtyard fountain, drawn across 2×2 tiles |
-| `fx_<element>.png` | 8 cols × 2 rows of 64×64. Row 1: 4-frame projectile loop (cols 1–4). Row 2: 8-frame impact. Elements: `fire`, `water`, `earth`, `air`, `arcane`, `light`, `shadow`, `time` | Spell effects |
+| `fx_<Name>.png` ✅ | 8 frames of 96×96 in one row. Names: `Fire_Burst`, `Water_Splash`, `Nature_Bloom`, `Wind_Slash`, `Arcane_Rune`, `Star_Shower`, `Dark_Pulse`, `Time_Stop`, `Healing_Aura`, `Haste`, `Familiar_Summon`, `Barrier` | Spell impacts, heals, Haste, Techs and familiar summons. Built from `source/fx_[a-c]_gen.png` with the glow separated from the magenta |
+| `fam_<id>.png` ✅ | 4 frames of 40×40: 2 idle, 2 moving. Ids: `cat`, `rabbit`, `owl`, `sprout` | Familiars following the party and in battle |
+| `prop_<Name>.png` ✅ | 64×64, standing on the bottom edge. Names in `PROPS` in `tools/build_assets.py` | Furniture, chests (with an open version), banners, the wishing well, the arena glyph and the Oracle Lantern |
+| `gear48.png` ✅ | 6 cols × 5 rows of 48×48 (positions in `GEAR_ICONS` in `index.html`) | Equipment icons |
 | `ui_window.png` ✅ | 192×192 nine-slice frame with 32px corners | Replaces every window frame |
 | `icons.png` ✅ | 6 cols × 4 rows of 48×48 (order in `ICONS` in `index.html`) | Menu, item, spell and pause icons |
 | `crests.png` ✅ | 4 × 96×96: Emberhold, Tidewyrm, Thornveil, Galecrest | Pause menu and the Oracle Lantern's portrait after sorting |
@@ -43,7 +46,7 @@ To clean up a single ChatGPT sheet before adding it, run `python3 ../tools/proce
 
 ## Magic Academy Art Pack (`pack/`)
 
-A curated subset of the "Magic Academy Art Pack, Part 1" (see `pack/PACK_README.md`). These are native 1x pixel art, drawn at half size on the 2x canvas so each pixel lands exactly.
+A curated subset of the "Magic Academy Art Pack, Part 1" (see `pack/PACK_README.md`). These are native 1x pixel art, drawn at half size on the 2x canvas so each pixel lands exactly. Every one of them now has an HD replacement above, so the game only downloads a pack file when its HD version is missing from `AVAILABLE`.
 
 | Files | Layout | Used for |
 |---|---|---|

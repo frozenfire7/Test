@@ -51,6 +51,46 @@ def key_magenta(im, strict=False):
     return Image.fromarray(out.clip(0, 255).astype(np.uint8), 'RGBA')
 
 
+def unmix_magenta(im, bg=(252, 2, 250)):
+    """For glowing effects: treat each pixel as a blend of the effect and the magenta background and recover both.
+
+    Alpha is the least coverage that explains the pixel; colour is what remains once the background share is removed."""
+    a = np.array(im.convert('RGB')).astype(float)
+    m = np.array(bg, float)
+    hi = np.where(a > m, (a - m) / np.maximum(255 - m, 1), 0)
+    lo = np.where(a < m, (m - a) / np.maximum(m, 1), 0)
+    alpha = np.clip(np.maximum(hi, lo).max(2), 0, 1)
+    rgb = (a - (1 - alpha[..., None]) * m) / np.maximum(alpha[..., None], 1e-3)
+    out = np.concatenate([np.clip(rgb, 0, 255), alpha[..., None] * 255], 2)
+    # faint pixels whose colour still reads as magenta are background noise, not glow
+    tint = (rgb[..., 0] > rgb[..., 1] + 60) & (rgb[..., 2] > rgb[..., 1] + 60)
+    out[(alpha < .22) | (tint & (alpha < .55))] = 0
+    return Image.fromarray(out.astype(np.uint8), 'RGBA')
+
+
+def fit_bottom(cell, size, pad=6):
+    """Trim a cell to its art and centre it on a square canvas, standing on the bottom edge."""
+    box = cell.getchannel('A').getbbox()
+    if not box:
+        return Image.new('RGBA', (size, size))
+    art = cell.crop(box)
+    side = max(art.width, art.height) + pad * 2
+    sq = Image.new('RGBA', (side, side))
+    sq.paste(art, ((side - art.width) // 2, side - art.height - pad))
+    return shrink(sq, (size, size))
+
+
+def recolour_gem(icon, hue):
+    """Turn the blue gem of a ring icon another colour (hue in degrees), leaving the metal alone."""
+    hsv = np.array(icon.convert('RGB').convert('HSV')).astype(int)
+    rgb = np.array(icon.convert('RGB')).astype(int)
+    gem = (rgb[..., 2] > rgb[..., 0] + 40) & (rgb[..., 2] > rgb[..., 1] + 15)
+    hsv[..., 0] = np.where(gem, hue * 255 // 360, hsv[..., 0])
+    out = Image.fromarray(hsv.astype(np.uint8), 'HSV').convert('RGBA')
+    out.putalpha(icon.getchannel('A'))
+    return out
+
+
 def shrink(im, size):
     """Premultiplied box downscale with hard alpha, so edges stay crisp."""
     arr = np.array(im).astype(float)
@@ -236,6 +276,51 @@ def build():
                 out.paste(fr, ((i % 4) * f, (i // 4) * f))
             save(out, f'foe_{art}.png')
 
+    # The Warden: 3x2 source (3 idle poses; 2 attack poses and a hurt pose) -> the usual 4x2 layout, 128px frames
+    (idle, act) = [foe_frames(row, 512, 128) for row in foe_rows(key_magenta(load('foe_warden_gen.png'), strict=True), 2, 3)]
+    out = Image.new('RGBA', (128 * 4, 128 * 2))
+    for i, fr in enumerate([idle[0], idle[1], idle[2], idle[1], act[0], act[1], act[1], act[2]]):
+        out.paste(fr, ((i % 4) * 128, (i // 4) * 128))
+    save(out, 'foe_warden.png')
+
+    # Familiars: 4x4 source, one familiar per row (2 idle poses, 2 moving poses) -> fam_<id>.png, 4 frames of 40px
+    for row, fam in zip(cells(key_magenta(load('familiars_gen.png'), strict=True), 4, 4), ('cat', 'rabbit', 'owl', 'sprout')):
+        strip = Image.new('RGBA', (40 * 4, 40))
+        box = None
+        for c in row:  # one shared crop per familiar so the poses keep their size and footing
+            b = c.getchannel('A').getbbox()
+            box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]), max(box[2], b[2]), max(box[3], b[3]))
+        side = max(box[2] - box[0], box[3] - box[1]) + 8
+        for i, c in enumerate(row):
+            cx = (box[0] + box[2]) // 2
+            strip.paste(shrink(c.crop((cx - side // 2, box[3] + 4 - side, cx + side // 2, box[3] + 4)), (40, 40)), (i * 40, 0))
+        save(strip, f'fam_{fam}.png')
+
+    # Props: 6x4 source -> prop_<Name>.png, 64px, standing on the bottom edge
+    for row, names in zip(cells(key_magenta(load('props_gen.png'), strict=True), 6, 4), PROPS):
+        for c, name in zip(row, names):
+            save(fit_bottom(c, 64), f'prop_{name}.png')
+
+    # Spell effects: 8x4 sources, one 8-frame animation per row -> fx_<Name>.png, 8 frames of 96px
+    for sheet, names in FX_SHEETS.items():
+        src = unmix_magenta(load(sheet))
+        cw, ch = src.width / 8, src.height / 4
+        for r, name in enumerate(names):
+            strip = Image.new('RGBA', (96 * 8, 96))
+            for c in range(8):
+                cx, cy = (c + .5) * cw, (r + .5) * ch
+                strip.paste(shrink(src.crop((int(cx - ch / 2), int(cy - ch / 2), int(cx + ch / 2), int(cy + ch / 2))), (96, 96)), (c * 96, 0))
+            save(strip, f'fx_{name}.png')
+
+    # Equipment icons: 6x4 source -> gear48.png (order in GEAR_ICONS in index.html), plus recoloured rings
+    grid = cells(key_magenta(load('gear_gen.png'), strict=True), 6, 4)
+    icons = [fit_bottom(c, 48, pad=10) for row in grid for c in row]
+    icons += [recolour_gem(icons[12], 350), recolour_gem(icons[12], 280), recolour_gem(icons[17], 355)]  # ruby ring, amethyst ring, duel medal
+    sheet = Image.new('RGBA', (48 * 6, 48 * 5))
+    for i, ic in enumerate(icons):
+        sheet.paste(ic, ((i % 6) * 48, (i // 6) * 48))
+    save(sheet, 'gear48.png')
+
 
 PORTRAITS = ('hero', 'mira', 'thorne', 'brannoch', 'quillon', 'aldous', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony', 'warden', 'nurse')
 NPCS = ('aldous', 'thorne', 'brannoch', 'quillon', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony')
@@ -245,6 +330,15 @@ FOE_SHEETS = {
     'foes_b_gen.png': ('toad', 'slime', 'emberslime', 'moth'),
     'foes_c_gen.png': ('shroom', 'gargoyle', 'shade', 'scarab'),
     'foes_d_gen.png': ('bone', 'apprentice', 'cgolem', 'echo'),
+}
+PROPS = (('Treasure_Chest', 'Treasure_Chest_Open', 'Student_Bed', 'Nightstand', 'Bulletin_Board', 'Magic_Mirror'),
+         ('Wood_Desk', 'Study_Chair', 'Potion_Shelf', 'Cauldron', 'Royal_Banner', 'Wishing_Well'),
+         ('Astrolabe', 'Grand_Globe', 'Spell_Altar', 'Stained_Glass', 'Academy_Flag', 'Duel_Arena_Glyph'),
+         ('Lantern', 'Book_Stack', 'Crystal_Ball', 'Potted_Plant', 'Barrel', 'Scroll_Rack'))
+FX_SHEETS = {
+    'fx_a_gen.png': ('Fire_Burst', 'Water_Splash', 'Nature_Bloom', 'Wind_Slash'),
+    'fx_b_gen.png': ('Arcane_Rune', 'Star_Shower', 'Dark_Pulse', 'Time_Stop'),
+    'fx_c_gen.png': ('Healing_Aura', 'Haste', 'Familiar_Summon', 'Barrier'),
 }
 BIG_FOES = {'gargoyle', 'shade', 'bone', 'apprentice', 'cgolem', 'echo'}
 
