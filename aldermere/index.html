@@ -124,6 +124,7 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 #goal .tab::after { content: ' \25BE'; }
 #goal.min .tab::after, #goal.hush .tab::after { content: ' \25B8'; }
 #goal.behind, #banner.behind { opacity: .22; }
+#banner.keep.behind { opacity: 1; }
 #toast.on.behind { opacity: .3; }
 #toast {
   top: 15%; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
@@ -131,7 +132,7 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
   text-shadow: 0 2px 0 #000, 0 0 14px rgba(0,0,0,.85); opacity: 0; transition: opacity .6s;
 }
 #toast.on { opacity: 1; }
-#banner { top: 4%; left: 50%; transform: translateX(-50%); padding: .25em 1.3em; font-family: var(--label); font-weight: 700; letter-spacing: .06em; font-size: clamp(12px, 2.2vw, 24px); font-size: clamp(12px, 2.2cqw, 24px); white-space: nowrap; }
+#banner { top: 4%; left: 50%; transform: translateX(-50%); padding: .25em 1.3em; font-family: var(--label); font-weight: 700; letter-spacing: .06em; font-size: clamp(12px, 2.2vw, 24px); font-size: clamp(12px, 2.2cqw, 24px); width: max-content; max-width: 92%; text-align: center; }
 
 #battle {
   left: 1.5%; right: 1.5%; bottom: 2.5%; max-height: 40%;
@@ -171,6 +172,8 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 .dtext { min-width: 0; }
 #say { max-width: 68ch; }
 #choices { margin-top: .4em; }
+#choices .opt > span:first-child { display: block; }
+.tag { flex: none; margin-right: .45em; font-family: var(--label); font-size: .72em; font-weight: 700; letter-spacing: .06em; color: var(--gold); }
 #more { position: absolute; right: 1.6vw; right: 1.6cqw; bottom: .9vw; bottom: .9cqw; color: var(--gold); animation: bob .8s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(3px); } }
 
@@ -228,6 +231,11 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
   #dialog, #battle { top: calc(100% + 10px); bottom: auto; left: 0; right: 0; height: var(--below); max-height: none; }
   #dialog { min-height: 0; font-size: 15px; padding: 12px 14px 14px; gap: 10px 12px; overflow: auto; touch-action: pan-y; align-content: start; }
   #dialog #portrait { width: 76px; }
+  /* answering: the box grows up over the bottom of the game screen so every answer fits, and the portrait shrinks */
+  #dialog.choosing { top: auto; bottom: calc(-1 * var(--below) - 10px); height: auto; min-height: var(--below); max-height: calc(100% + var(--below) + 10px); font-size: 14px; }
+  #dialog.choosing { grid-template-columns: minmax(0, 1fr); }
+  #dialog.choosing #portrait { display: none; }
+  #choices .opt { padding-block: .3em; }
   #who { position: static; transform: none; grid-column: 1 / -1; justify-self: start; font-size: 12px; margin-bottom: -4px; }
   #more { right: 12px; bottom: 8px; }
   #battle { font-size: 14px; grid-template-columns: minmax(0, 38%) minmax(0, 1fr); gap: 8px; }
@@ -250,6 +258,11 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
   .dpad { position: fixed; left: max(8px, env(safe-area-inset-left, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(3, 46px); pointer-events: auto; }
   .abtns { position: fixed; right: max(8px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); width: 132px; flex-wrap: wrap; justify-content: flex-end; pointer-events: auto; }
   .abtns [data-a="menu"] { order: -1; flex-basis: 100%; }
+  /* the screen is small here: the dialogue box stays inside it and scrolls, and answers get the full width */
+  #dialog { max-height: calc(100% - 8px); overflow: auto; touch-action: pan-y; }
+  #dialog #who { position: static; transform: none; grid-column: 1 / -1; justify-self: start; margin-bottom: -4px; }
+  #dialog.choosing { grid-template-columns: minmax(0, 1fr); font-size: 11px; line-height: 1.3; }
+  #dialog.choosing #portrait { display: none; }
 }
 @media (hover: none), (pointer: coarse) { #help { display: none; } }
 @media (prefers-reduced-motion: reduce) { #more { animation: none; } #fade, #toast { transition: none; } }
@@ -840,6 +853,7 @@ function migrate(s) {
   s.bag = s.bag || ['novice_wand', 'novice_robe'];
   s.chests = s.chests || {};
   s.familiar = s.familiar || null;
+  s.approval = s.approval || {};
   return s;
 }
 function newState(name) {
@@ -919,13 +933,13 @@ function menu(el, items, { start = 0, noCancel = false } = {}) {
     const nodes = items.map((it, i) => {
       const d = document.createElement('div');
       d.className = 'opt' + (it.dis ? ' dis' : '');
-      d.innerHTML = `<span>${it.item ? itemIcon(it.item) : iconHTML(it.icon || it.label)}${esc(it.label)}</span>` + (it.sub ? `<span class="sub">${esc(it.sub)}</span>` : '');
+      d.innerHTML = `<span>${it.item ? itemIcon(it.item) : iconHTML(it.icon || it.label)}${it.tag ? `<b class="tag">${esc(it.tag)}</b>` : ''}<span>${esc(it.label)}</span></span>` + (it.sub ? `<span class="sub">${esc(it.sub)}</span>` : '');
       d.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (it.dis) return; sel = i; draw(); done(i); });
       el.appendChild(d); return d;
     });
     function draw() {
       nodes.forEach((n, i) => n.classList.toggle('sel', i === sel));
-      const n = nodes[sel], sc = el.closest('#cmds') || el;
+      const n = nodes[sel], sc = el.closest('#cmds, #dialog') || el;
       if (n && sc.scrollHeight > sc.clientHeight) {
         if (n.offsetTop < sc.scrollTop) sc.scrollTop = n.offsetTop;
         else if (n.offsetTop + n.offsetHeight > sc.scrollTop + sc.clientHeight) sc.scrollTop = n.offsetTop + n.offsetHeight - sc.clientHeight;
@@ -1017,11 +1031,54 @@ async function say(who, text, o = {}) {
   await waitOk();
   $('dialog').hidden = true;
 }
-async function choose(who, text, options) {
-  await typeText(who, text);
-  const i = await menu($('choices'), options.map(l => ({ label: l })), { noCancel: true });
+// Dialogue choices. An option is a string or { label, tag, sub, check: [skill, dc], show }.
+// Options with show === false are left out; the return value is always the option's index in the list given.
+// Picking an option with a check rolls it straight away and leaves the result in `rolled`.
+let rolled = null;
+async function choose(who, text, options, o = {}) {
+  const shown = options.map((op, i) => ({ ...(typeof op === 'string' ? { label: op } : op), i })).filter(op => op.show !== false);
+  await typeText(who, text, o);
+  $('dialog').classList.add('choosing');
+  const r = await menu($('choices'), shown.map(op => ({ label: op.label, tag: op.tag && (op.sub ? `${op.tag} · ${op.sub}` : op.tag), icon: 'none' })), { noCancel: true });
+  $('dialog').classList.remove('choosing');
   $('dialog').hidden = true;
-  return i;
+  rolled = shown[r].check ? await roll(...shown[r].check) : null;
+  return shown[r].i;
+}
+// Skill checks: d20 + a bonus from level, House and company, against a difficulty (DC). A 20 always passes and a 1 always fails.
+const SKILLS = { insight: 'Insight', arcana: 'Arcana', persuasion: 'Persuasion', intimidation: 'Intimidation' };
+const HOUSE_SKILL = { ember: 'intimidation', tide: 'insight', thorn: 'persuasion', gale: 'arcana' };
+const skillMod = k => Math.floor(S.lv / 3) + (S.house && HOUSE_SKILL[S.house] === k ? 2 : 0) + (k === 'arcana' && S.mira ? 1 : 0);
+const check = (skill, dc, label) => ({ label, tag: SKILLS[skill].toUpperCase(), sub: `DC ${dc}`, check: [skill, dc] });
+const houseOpt = (h, label) => ({ label, tag: HOUSES[h].name.toUpperCase(), show: S.house === h });
+const memoryOpt = (lv, label) => ({ label, tag: 'MEMORY', show: S.memories.includes(lv) });
+async function roll(skill, dc) {
+  const mod = skillMod(skill), d = 1 + Math.floor(Math.random() * 20), total = d + mod;
+  const ok = d === 20 || (d !== 1 && total >= dc);
+  if (!reduceMotion) for (let k = 0; k < 6; k++) { banner(`${SKILLS[skill]} check: d20 ${1 + Math.floor(Math.random() * 20)}`, 300, true); await sleep(80); }
+  banner(`${SKILLS[skill]} ${d}${mod ? ' + ' + mod : ''} = ${total} vs DC ${dc}: ${d === 20 ? 'critical success!' : d === 1 ? 'critical failure' : ok ? 'success' : 'failure'}`, 2400, true);
+  await sleep(reduceMotion ? 200 : 650);
+  return ok;
+}
+// Companions remember how you treat people. Positive is approval.
+function approve(who, n) {
+  if (who === 'Mira' && !S.mira) return;
+  S.approval[who] = (S.approval[who] || 0) + n;
+  banner(`${who} ${n > 0 ? (who === 'Mira' ? 'approves' : 'respects that') : (who === 'Mira' ? 'disapproves' : 'did not like that')}`, 1600, true);
+}
+const fond = who => (S.approval[who] || 0) >= 3;
+// A conversation hub: each topic can be asked once in the whole game, and the last option leaves.
+// Topics are { id, label, run(rolled), show, tag, sub, check }.
+async function ask(who, prompt, topics, leave = 'That is all.') {
+  const left = topics.filter(t => t.show !== false && !S.flags['asked_' + t.id]);
+  while (left.length) {
+    const i = await choose(who, prompt, [...left, { label: leave }]);
+    if (i === left.length) return;
+    const [t] = left.splice(i, 1);
+    S.flags['asked_' + t.id] = true;
+    await t.run(rolled);
+    prompt = 'Anything else?';
+  }
 }
 let toastTimer = null;
 function toast(text) {
@@ -1029,8 +1086,9 @@ function toast(text) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 1800);
 }
 let bannerTimer = null;
-function banner(text, ms = 1000) {
-  const b = $('banner'); b.textContent = text; b.hidden = false;
+// keep: stays fully visible even when the player walks behind it (dice rolls and approval)
+function banner(text, ms = 1000, keep = false) {
+  const b = $('banner'); b.textContent = text; b.hidden = false; b.classList.toggle('keep', keep);
   clearTimeout(bannerTimer); bannerTimer = setTimeout(() => { b.hidden = true; }, ms);
 }
 async function fadeOut() { $('fade').classList.add('on'); await sleep(reduceMotion ? 60 : 420); }
@@ -1064,7 +1122,7 @@ function updateHUD() {
   const key = S.lv + '|' + S.goal;
   if (key !== goalKey) { goalKey = key; g.innerHTML = `<span class="tab">Lv ${S.lv} &middot; ${esc(rankOf(S.lv))}</span><span class="g">${esc(S.goal)}</span>`; openGoal(); }
   if (goalFoldAt && performance.now() > goalFoldAt) { g.classList.add('min'); goalFoldAt = 0; }
-  const hush = handlers.length > 0 || $('toast').classList.contains('on');
+  const hush = handlers.length > 0 || $('toast').classList.contains('on') || !$('banner').hidden;
   if (g.classList.contains('hush') !== hush) g.classList.toggle('hush', hush);
   if (hush && goalFoldAt) goalFoldAt = performance.now() + GOAL_OPEN_MS; // the open time counts from when it can be read
   fadeIfBehind(g, me);
@@ -1313,17 +1371,15 @@ const NPCS = {
   courtyard: [
     { x: 17, y: 3, kind: 'person', look: 'aldous', dir: 'down', talk: talkAldous },
     { x: 24, y: 13, kind: 'person', look: 'hob', dir: 'left', show: () => S.flags.sorted, talk: talkHob },
-    { x: 8, y: 13, kind: 'person', look: 'pell', dir: 'right', talk: () => say('Pell', 'The fountain is charmed. Drink from it and you will feel right as rain. Tastes a bit like pennies, though.') },
+    { x: 8, y: 13, kind: 'person', look: 'pell', dir: 'right', talk: talkPell },
   ],
   hall: [
     { x: 14, y: 1, kind: 'person', look: 'thorne', dir: 'down', talk: talkThorne },
     { x: 17, y: 1, kind: 'lantern', talk: talkLantern },
     { x: 24, y: 4, kind: 'ghost', dir: 'down', talk: talkGhost },
-    { x: 6, y: 6, kind: 'person', look: 'juniper', dir: 'down', talk: () => say('Juniper', S.flags.sorted
-        ? 'You are the Unwritten Student! The Quill has not added a name in six hundred years. My sister thinks you are a spy. I think you are a ghost. No offence, Sir Pemberton.'
-        : 'Did you hear? The Admissions Quill wrote one extra name this morning. Nobody knows who it is.') },
+    { x: 6, y: 6, kind: 'person', look: 'juniper', dir: 'down', talk: talkJuniper },
     { x: 18, y: 6, kind: 'person', look: 'chef', dir: 'down', talk: talkChef },
-    { x: 21, y: 9, kind: 'person', look: 'tobias', dir: 'left', talk: () => say('Tobias', 'The stairs in the east tower move on Tuesdays. Today is Tuesday. I have been late to everything since breakfast.') },
+    { x: 21, y: 9, kind: 'person', look: 'tobias', dir: 'left', talk: talkTobias },
   ],
   library: [
     { x: 27, y: 2, kind: 'person', look: 'quillon', dir: 'down', talk: talkQuillon },
@@ -1361,10 +1417,32 @@ function drawProp(o, t) {
 async function talkHob() {
   if (S.familiar) {
     const f = FAMS[S.familiar];
-    return say('Hob', `How is your ${f.name} getting on? It ${f.desc} when you need it most. About every third time you act in a fight, by my count.`, { face: 'happy' });
+    await say('Hob', `How is your ${f.name} getting on? It ${f.desc} when you need it most. About every third time you act in a fight, by my count.`, { face: 'happy' });
+    return ask('Hob', 'Something else? The roses will not water themselves. Well, three of them will.', [
+      { id: 'hob_job', label: 'Ask how long he has kept the grounds.', run: async () => {
+        await say('Hob', 'Forty years this winter. I came the same week the Archive was sealed. Funny, that. Nobody else thinks it is funny.');
+      } },
+      { id: 'hob_loose', ...check('insight', 11, 'Ask what "got loose" on the grounds.'), run: async ok => {
+        if (ok) await say('Hob', 'You noticed I keep looking at the Archive windows. Fine. The slimes are not escaping from the potions store. They are coming up out of the old drains under the Library. Something down there is stirring.', { face: 'sad' });
+        else await say('Hob', 'Slimes, mostly. Potion spills with ideas above their station. Nothing to worry about.');
+      } },
+      { id: 'hob_fam', label: `Ask why the ${f.name} chose you.`, run: async () => {
+        await say('Hob', 'Familiars choose people they have met before. That is the old saying, anyway. Never made sense to me. Until today.');
+      } },
+    ], 'Leave him to the roses.');
   }
   await say('Hob', 'Hob. Groundskeeper. Every first-year bonds with a familiar in their first week. You missed the ceremony, being unwritten and all.');
   await say('Hob', 'These four have been waiting by the fountain all morning. They seem to think they know you.');
+  const c = await choose(S.name, '(Four small faces turn toward you at once.)', [
+    '"They know me? How?"',
+    '"I am not sure I am ready to look after anything."',
+    check('arcana', 10, 'Feel for the bond between them and you.'),
+    houseOpt('thorn', 'Kneel down and let them come to you.'),
+  ]);
+  if (c === 0) await say('Hob', 'Animals remember things people forget. You could be anyone, to me. To them you are somebody.');
+  else if (c === 1) await say('Hob', 'Nobody is. That is rather the point of a familiar. You look after each other, badly, until you get good at it.', { face: 'happy' });
+  else if (c === 2) await say(null, rolled ? 'There is a thread already there, thin as cobweb, running from each of them to you. As if you have done this before.' : 'You feel nothing at all. The rabbit sneezes.');
+  else { await say(null, 'You kneel in the grass. All four of them crowd into your lap at once. Hob laughs.'); await say('Hob', 'Thornveil. You lot always were good with living things.', { face: 'happy' }); }
   const keys = Object.keys(FAMS);
   const i = await choose('Hob', 'Which one comes to you?', keys.map(k => `${FAMS[k].name}: ${FAMS[k].desc}`));
   S.familiar = keys[i];
@@ -1373,12 +1451,23 @@ async function talkHob() {
 }
 
 async function talkChef() {
-  restoreParty();
   await say('Madame Pottage', pick([
-    'Stew! It is always stew. Today it is stew with a little bit of courage in it. Eat up.',
-    'You look peaky. Eat this. No, I will not say what is in it. Magic, mostly.',
-    'The Headmistress takes her tea with seven sugars. Do not tell her I told you.',
+    'Stew! It is always stew. Today it is stew with a little bit of courage in it.',
+    'You look peaky. Sit. Eat. No, I will not say what is in it. Magic, mostly.',
+    'The Headmistress takes her tea with seven sugars. Do not tell her I told you. Now, stew.',
   ]));
+  const c = await choose(S.name, '(A steaming bowl appears in front of you.)', [
+    'Eat the stew.',
+    '"What is actually in it?"',
+    { ...check('persuasion', 12, '"Could I take some for the road?"'), show: !S.flags.chefPacked },
+    '"Have you worked here long?"',
+  ]);
+  if (c === 1) await say('Madame Pottage', 'Carrots. Courage. A pinch of a dragon\'s good mood. The rest is between me and the pot.');
+  else if (c === 2) {
+    if (rolled) { S.flags.chefPacked = true; S.items.tonic += 2; await say('Madame Pottage', 'Such manners! Here, two Moonleaf Tonics. It is the same recipe, but in a bottle.', { face: 'happy' }); }
+    else await say('Madame Pottage', 'No seconds until you have finished your firsts.');
+  } else if (c === 3) await say('Madame Pottage', 'I have fed four Headmasters and a Headmistress. I fed you once, too, I think. A long time ago. Silly. Eat.');
+  restoreParty();
   await say(null, 'The stew is hot and strange and wonderful. Your party feels completely restored.');
 }
 
@@ -1386,7 +1475,30 @@ async function talkBryony() {
   if (!S.flags.bryonyGift) {
     S.flags.bryonyGift = true; S.items.tonic += 2;
     await say('Bryony', 'You are the new one! Welcome to the dorm. Here, two Moonleaf Tonics. I brewed them myself. Mostly safe.', { face: 'happy' });
-  } else await say('Bryony', 'The beds are charmed for a perfect night\'s sleep. Lie down if you are hurt. The board by the door lists what everyone needs help with.');
+    const c = await choose(S.name, '(She is very proud of them.)', [
+      '"Thank you. That is really kind."',
+      '"Mostly?"',
+      check('arcana', 10, 'Hold a tonic up to the light and check the brew.'),
+    ]);
+    if (c === 0) await say('Bryony', 'Everyone should get a welcome present. I did not. So I make them now.', { face: 'happy' });
+    else if (c === 1) await say('Bryony', 'One time a boy turned slightly blue. He liked it! He still visits the colour sometimes.');
+    else if (rolled) { S.items.ether += 1; await say(null, 'One of them is cloudy. Bryony sees your face, swaps it for an Ether Drop, and pretends that was the plan all along.'); }
+    else await say(null, 'They look fine to you. They also look slightly alive. You decide not to think about it.');
+    return;
+  }
+  await say('Bryony', 'The beds are charmed for a perfect night\'s sleep. Lie down if you are hurt. The board by the door lists what everyone needs help with.');
+  await ask('Bryony', 'What do you want to know?', [
+    { id: 'bry_mirror', label: 'Ask about the mirror.', run: async () => {
+      await say('Bryony', 'It shows you as you will be. I see myself running the potions store. Pell sees himself asleep. You should look. Or maybe you should not.');
+    } },
+    { id: 'bry_mira', label: 'Ask about Mira.', show: !!S.mira, run: async () => {
+      await say('Bryony', 'Mira Fenwick? She reads by candlelight until two in the morning and talks in her sleep about clocks. Very sweet. Very loud.');
+    } },
+    { id: 'bry_cauldron', ...check('persuasion', 13, '"Could you brew me something stronger?"'), run: async ok => {
+      if (ok) { S.items.ether += 2; await say('Bryony', 'Oh, you have the face of someone who means it. Two Ether Drops. Do not drink them both at once. I did, once. I saw sounds.', { face: 'happy' }); }
+      else await say('Bryony', 'Stronger is how people turn blue. Come back when I trust you not to.');
+    } },
+  ]);
 }
 
 async function restInBed() {
@@ -1433,10 +1545,102 @@ async function openChest(id) {
 
 async function wishingWell() {
   if (S.flags.wished) return say(null, 'Your coin is still down there, glinting. Wishes take time.');
-  const i = await choose(null, 'An old wishing well. A copper coin sits on the rim, as if someone left it for you.', ['Make a wish', 'Leave it']);
-  if (i !== 0) return;
-  S.flags.wished = true; S.items.ether += 1;
-  await say(null, 'You wish to remember. The water glows faintly, and an Ether Drop bobs up to the surface. Not quite what you asked for.');
+  const i = await choose(null, 'An old wishing well. A copper coin sits on the rim, as if someone left it for you.', [
+    'Wish to remember who you are.',
+    'Wish to be strong enough for whatever is coming.',
+    { label: 'Wish for Mira to be safe.', show: !!S.mira },
+    'Leave the coin where it is.',
+  ]);
+  if (i === 3) return;
+  S.flags.wished = true;
+  if (i === 0) { S.items.ether += 1; await say(null, 'You wish to remember. The water glows faintly, and an Ether Drop bobs up to the surface. Not quite what you asked for.'); }
+  else if (i === 1) { S.items.tonic += 2; await say(null, 'The water ripples into the shape of a tower with no numbers on its clock. Two Moonleaf Tonics float up out of it. The well seems to think you will need them.'); }
+  else {
+    S.items.ether += 1; S.items.tonic += 1;
+    await say(null, 'The water turns warm as a hand. A tonic and an Ether Drop bob up together, side by side.');
+    await say('Mira', 'You wished for me? You could have wished for anything. ...Thank you.', { face: 'happy' });
+    approve('Mira', 2);
+  }
+}
+
+async function talkPell() {
+  if (!S.flags.pellMet) {
+    S.flags.pellMet = true;
+    await say('Pell', 'The fountain is charmed. Drink from it and you will feel right as rain. Tastes a bit like pennies, though.');
+    const c = await choose(S.name, '(Pell is chewing the end of a quill.)', [
+      '"Thanks. I am new."',
+      '"Pennies? Do you drink from it a lot?"',
+      check('insight', 9, '"You are waiting for someone, aren\'t you?"'),
+    ]);
+    if (c === 0) await say('Pell', 'Everyone is new on day one. That is sort of the whole point of day one.', { face: 'happy' });
+    else if (c === 1) await say('Pell', 'Every morning. My gran says it brings luck. I have failed every test so far, so now I am testing whether it brings bad luck.');
+    else if (rolled) { S.flags.pellBrother = true; await say('Pell', 'My brother, Fenn. He started here last year and did not come home for the summer. They say he is "on placement". Nobody will say where.', { face: 'sad' }); }
+    else await say('Pell', 'No? I am just standing near a fountain. People do that.');
+    return;
+  }
+  if (S.flags.pellBrother && S.flags.chapter1 && !S.flags.pellArchive) {
+    S.flags.pellArchive = true;
+    await say('Pell', 'You went into the Archive. Everyone says so. Did you see a boy in there? Tall, freckles, laughs like a goose?', { face: 'sad' });
+    const c = await choose(S.name, '(The ledger in the Archive listed first-years from forty years ahead. You remember one line.)', [
+      '"No. But I will keep looking. I promise."',
+      check('insight', 12, 'Tell him the truth: there was a name, Fenn, on a list from the future.'),
+      '"I am sorry. I did not."',
+    ]);
+    if (c === 0) await say('Pell', 'You promise? People do not usually promise me things. Okay.', { face: 'happy' });
+    else if (c === 1 && rolled) { await say(null, 'You choose your words carefully. Pell listens to every one of them.'); await say('Pell', 'So he is out there. Somewhere ahead. That is... better than nowhere. Thank you.', { face: 'happy' }); approve('Mira', 1); }
+    else if (c === 1) await say('Pell', 'A list from the future? Do not make fun of me. Not about this.', { face: 'sad' });
+    else await say('Pell', 'That is alright. I will keep drinking the pennies.');
+    return;
+  }
+  await say('Pell', pick([
+    'I tried the fountain again. Still pennies. Still no luck.',
+    S.familiar ? `Your ${FAMS[S.familiar].name} keeps staring at me. Is that good? It feels like an exam.` : 'Hob says the familiars by the fountain are waiting for someone. I asked. They were not waiting for me.',
+    'Brannoch gave me detention for being too careful. Is that even a thing?',
+  ]));
+}
+
+async function talkJuniper() {
+  if (!S.flags.sorted) {
+    await say('Juniper', 'Did you hear? The Admissions Quill wrote one extra name this morning. Nobody knows who it is.');
+    const c = await choose(S.name, '(Her eyes are shining. This is the best gossip of her life.)', [
+      '"Who do you think it is?"',
+      '"It was me."',
+      check('insight', 11, '"You know more than you are saying."'),
+    ]);
+    if (c === 0) await say('Juniper', 'A spy, obviously. Or a prince. Or a very small dragon in a cloak. I am keeping an open mind.');
+    else if (c === 1) await say('Juniper', 'Shut UP. ...Wait. Really? Do not move. I need to tell everyone. No, I need to stay here. Augh.', { face: 'shocked' });
+    else if (rolled) { S.flags.juniperInk = true; await say('Juniper', 'Fine. My sister works for the Registrar. She says the extra name was written in a hand that matched nobody in the school. Then it started to match someone.', { face: 'shocked' }); }
+    else await say('Juniper', 'Me? I know nothing. I am a vault. A gossiping vault.');
+    return;
+  }
+  await say('Juniper', 'You are the Unwritten Student! The Quill has not added a name in six hundred years. My sister thinks you are a spy. I think you are a ghost. No offence, Sir Pemberton.');
+  await ask('Juniper', 'Go on, ask me anything. I know everything. Nearly.', [
+    { id: 'jun_spy', label: '"I am not a spy."', run: async () => {
+      await say('Juniper', 'That is exactly what a spy would say. Also what a not-spy would say. This is very hard.');
+    } },
+    { id: 'jun_boo', label: 'Lean in close. "Boo."', run: async () => {
+      await say('Juniper', 'AAH! ...Okay, ghosts cannot do that. Ghosts are cold. You are just rude.', { face: 'shocked' });
+    } },
+    { id: 'jun_sister', ...check('persuasion', 12, '"What else has your sister heard?"'), run: async ok => {
+      if (ok) { S.flags.juniperInk = true; await say('Juniper', 'She says the Registrar locked the Quill in a drawer after it wrote your name. In the morning the drawer was open and the Quill had written one more word: "Sorry."', { face: 'shocked' }); }
+      else await say('Juniper', 'If I told you, I would have to tell everyone, and then it would not be a secret. That is how secrets work.');
+    } },
+  ], 'Leave her to her theories.');
+}
+
+async function talkTobias() {
+  await say('Tobias', S.flags.tobiasHelped ? 'The stairs only moved twice today! I was only late to half of everything!' : 'The stairs in the east tower move on Tuesdays. Today is Tuesday. I have been late to everything since breakfast.');
+  if (S.flags.tobiasHelped && S.flags.asked_tob_tuesday) return;
+  await ask('Tobias', '(He clutches his timetable like a shield.)', [
+    { id: 'tob_walk', label: '"Want me to walk you to your next class?"', run: async () => {
+      S.flags.tobiasHelped = true; S.items.tonic += 1;
+      await say('Tobias', 'Would you? Nobody has ever offered. Here, take this tonic. My mum packs six. I am not sure what she thinks happens here.', { face: 'happy' });
+    } },
+    { id: 'tob_tuesday', ...check('arcana', 12, 'Look closely at the enchantment on his timetable.'), run: async ok => {
+      if (ok) await say(null, 'The spell is not on the stairs. It is on the date. Every page of his timetable says Tuesday, in ink forty years old. Somewhere in Aldermere, time is stuck.');
+      else await say(null, 'It is a very ordinary timetable. With a lot of crossings-out.');
+    } },
+  ], 'Wish him luck.');
 }
 
 async function talkCassius() {
@@ -1445,31 +1649,94 @@ async function talkCassius() {
     S.flags.rivalMet = true;
     await say('Cassius Vane', `Cassius Vane. ${HOUSES[rivalHouse].name}. My family has sent a Vane to Aldermere for eleven generations, and not one of us was ever written in late.`);
     await say('Cassius Vane', 'You are the Unwritten Student. The one with no spark. I want to see what all the fuss is about.');
+    const c = await choose(S.name, '(He is smiling, but his hands are clenched.)', [
+      '"Then watch closely."',
+      '"Eleven generations, and you still had to try out?"',
+      check('insight', 12, '"Who are you really trying to impress?"'),
+      check('intimidation', 14, 'Step right up to him. "Walk away, Vane."'),
+    ]);
+    if (c === 0) { await say('Cassius Vane', 'Oh, I intend to.'); approve('Cassius', 1); }
+    else if (c === 1) { await say('Cassius Vane', '...That was almost funny. Do not let it happen again.'); approve('Mira', 1); }
+    else if (c === 2 && rolled) { S.flags.cassiusFather = true; await say(null, 'His eyes flick up to the castle windows. Someone up there is watching him. For a second he looks about nine years old.'); await say('Cassius Vane', 'Nobody. Mind your own business.'); }
+    else if (c === 2) await say('Cassius Vane', 'Impress? I do not need to impress anyone. I am a Vane.');
+    else if (rolled) { await say(null, 'He takes half a step back before he catches himself.'); await say('Cassius Vane', 'Interesting. You do have a spine, at least.'); approve('Cassius', 2); }
+    else await say('Cassius Vane', 'Ha! Was that meant to be scary? Try again when you can light a candle.');
   }
   if (S.flags.rivalBeaten) {
-    return say('Cassius Vane', S.flags.chapter1 ? 'I heard you went into the Archive and came back out. Fine. You are interesting. Do not let it go to your head.' : 'Do not look so pleased. That was one duel. Next term I will have three new spells.');
+    if (S.flags.chapter1) return say('Cassius Vane', fond('Cassius') ? 'I heard you went into the Archive and came back out. If you go again... I would not mind coming. For the family name. Obviously.' : 'I heard you went into the Archive and came back out. Fine. You are interesting. Do not let it go to your head.');
+    return say('Cassius Vane', fond('Cassius') ? 'Practice duel later? You are the only one here who does not let me win.' : 'Do not look so pleased. That was one duel. Next term I will have three new spells.');
   }
-  const i = await choose('Cassius Vane', 'Duel me in the arena. Unless you would rather go and hide in the library.', ['Accept the duel', 'Not today']);
+  const i = await choose('Cassius Vane', 'Duel me in the arena. Unless you would rather go and hide in the library.', ['Accept the duel', 'Not today', { label: '"Why do you care so much?"', show: !!S.flags.cassiusFather }]);
+  if (i === 2) return say('Cassius Vane', 'Because my father is watching from the tower, and he has never once watched me win. Now duel me or leave.');
   if (i !== 0) return say('Cassius Vane', 'As I thought.');
   const lv = Math.max(2, S.lv);
   Object.assign(FOES.rival, { hp: 40 + 20 * lv, atk: Math.round(4 + 1.8 * lv), mag: 4 + 2 * lv, def: Math.round(2 + 1.2 * lv), spd: 9 + .3 * lv, xp: 30 * lv, acts: ['hit', 'hit', 'spell'] });
   const r = await fight(['rival'], { noFlee: true, duel: true });
-  if (r !== 'win') { await say('Cassius Vane', 'As expected. Come back when you have learned a second spell.'); return; }
+  if (r !== 'win') {
+    await say('Cassius Vane', 'As expected. Come back when you have learned a second spell.');
+    const c = await choose(S.name, '(You pick yourself up off the sand.)', ['"Next time."', check('persuasion', 13, '"Show me how you did that last spell."'), '"You got lucky."']);
+    if (c === 1 && rolled) { S.items.ether += 1; await say('Cassius Vane', '...Fine. Keep your wrist loose, and do not shout the words. Here. You will need this more than me.'); await say(null, 'Cassius tosses you an Ether Drop.'); approve('Cassius', 1); }
+    else if (c === 1) await say('Cassius Vane', 'And give away my secrets? Nice try.');
+    else if (c === 2) await say('Cassius Vane', 'Luck is what people call skill when it is not theirs.');
+    return;
+  }
   S.flags.rivalBeaten = true;
   if (!S.bag.includes('oak_wand')) S.bag.push('oak_wand');
   if (!S.bag.includes('duel_medal')) S.bag.push('duel_medal');
-  await say('Cassius Vane', 'That... was a fluke. Take this wand. It was my first. I do not need it anymore. Obviously.');
+  await say('Cassius Vane', 'That... was a fluke.');
+  const c = await choose(S.name, '(He is breathing hard. Up in the tower, a curtain twitches.)', [
+    'Offer him a hand up. "Good duel. You nearly had me."',
+    '"A fluke? Want to go again?"',
+    { label: '"Your father was watching. He saw you fight well."', show: !!S.flags.cassiusFather },
+    check('intimidation', 11, '"Remember this next time you call me sparkless."'),
+  ]);
+  if (c === 0) { await say('Cassius Vane', '...Nobody ever offers a Vane a hand. It is very confusing.'); approve('Cassius', 2); approve('Mira', 1); }
+  else if (c === 1) { await say('Cassius Vane', 'Do not push it.'); approve('Cassius', -1); approve('Mira', -1); }
+  else if (c === 2) { await say('Cassius Vane', 'He saw me lose. That is all he ever sees. ...But thank you for saying it.', { face: 'sad' }); approve('Cassius', 3); }
+  else if (rolled) await say('Cassius Vane', 'I will. Believe me, I will.');
+  else await say('Cassius Vane', 'Sparkless, spark-full, you still duel like a startled goose.');
+  await say('Cassius Vane', 'Take this wand. It was my first. I do not need it anymore. Obviously.');
   await say(null, `Received the Oak Wand (${gearText(GEAR.oak_wand)}) and a Duel Medal (${gearText(GEAR.duel_medal)}). Equip them from the menu.`);
 }
 
 async function talkAldous() {
   if (!S.flags.sorted) {
-    await say('Prefect Aldous', 'Name? ...Hm. That is strange. You are not on my list.');
-    await say('Prefect Aldous', 'Never mind. The Headmistress will sort it out. Great Hall, through the north doors. Go!');
-  } else if (!S.flags.trained) await say('Prefect Aldous', `A ${HOUSES[S.house].name}! House points are awarded for good conduct and taken away for setting the hedges on fire. Twice this week already. Brannoch is east of here.`);
+    if (S.flags.aldousList) return say('Prefect Aldous', 'Great Hall. North doors. You are still not on my list, and it is still bothering me.');
+    S.flags.aldousList = true;
+    await say('Prefect Aldous', 'Name? ...Hm. That is strange. You are not on my list.', { face: 'shocked' });
+    const c = await choose(S.name, '(He frowns at his clipboard, then at you, then at the clipboard again.)', [
+      '"Then the Headmistress can sort it out."',
+      check('persuasion', 11, '"Please look again. I need to be on that list."'),
+      check('intimidation', 13, '"Your list is wrong."'),
+      '"I do not remember signing up for anything."',
+    ]);
+    if (c === 0) await say('Prefect Aldous', 'Exactly what I was about to say. Great Hall, north doors. Go!');
+    else if (c === 1 && rolled) {
+      S.flags.wetInk = true;
+      await say('Prefect Aldous', '...Wait. There. At the very bottom.', { face: 'shocked' });
+      await say('Prefect Aldous', 'That was not there a minute ago. The ink is still wet. And it is in my handwriting. I would remember writing that. Wouldn\'t I?');
+    } else if (c === 1) await say('Prefect Aldous', 'I have looked twice. Lists do not lie. Usually.');
+    else if (c === 2 && rolled) { S.flags.fountainHint = true; await say('Prefect Aldous', '...It might be. It has been a very strange morning. The fountain splashed me on purpose.'); }
+    else if (c === 2) await say('Prefect Aldous', 'My list is never wrong. I laminate it.');
+    else await say('Prefect Aldous', 'Nobody remembers signing up. That is what parents are for. Off you go. The Headmistress will know.');
+    return;
+  }
+  if (!S.flags.trained) await say('Prefect Aldous', `A ${HOUSES[S.house].name}! House points are awarded for good conduct and taken away for setting the hedges on fire. Twice this week already. Brannoch is east of here.`);
   else if (!S.flags.mira) await say('Prefect Aldous', 'The Library is through the west arch. Mind the Inkimps. Someone left a bestiary open again.');
   else if (!S.flags.chapter1) await say('Prefect Aldous', 'People say the Archive seal hummed when you walked past it. That seal has not so much as flickered in forty years.');
   else await say('Prefect Aldous', 'You look different today. Taller, or older, or something. Do not tell me. I am a Prefect. I do not want to know.');
+  await ask('Prefect Aldous', 'Anything else? I have a badge to polish.', [
+    { id: 'ald_houses', label: 'Ask about the four Houses.', run: async () => {
+      await say('Prefect Aldous', 'Emberhold are brave and loud. Tidewyrm are clever and smug. Thornveil are loyal and smell of compost. Galecrest are ambitious and never on the ground.');
+      await say('Prefect Aldous', `And you are ${HOUSES[S.house].name}. My condolences. That is a joke. Prefects are allowed one a term.`, { face: 'happy' });
+    } },
+    { id: 'ald_why', label: 'Ask why he became a Prefect.', run: async () => {
+      await say('Prefect Aldous', 'Somebody has to stand in the courtyard and tell people where to go. I like knowing where people are. It means nobody gets lost.', { face: 'sad' });
+    } },
+    { id: 'ald_scared', label: '"You were scared this morning. Why?"', show: !!(S.flags.fountainHint || S.flags.wetInk), run: async () => {
+      await say('Prefect Aldous', 'Because the fountain has not moved in years, and this morning it splashed toward you like it was waving. And because your name is in my handwriting. I do not like things I cannot put on a list.');
+    } },
+  ], 'Let him get back to his clipboard.');
 }
 
 async function talkThorne() {
@@ -1477,23 +1744,59 @@ async function talkThorne() {
     await say('Headmistress Thorne', 'Ah. The one the Quill wrote about.');
     await say('Headmistress Thorne', 'Every summer the Admissions Quill writes the names of the children Aldermere will teach. This morning it wrote one more name, after the list was sealed.');
     await say('Headmistress Thorne', `${S.name}. In handwriting the Registrar swears is your own.`);
-    const c = await choose(S.name, '(What do you say?)', ['I don\'t remember anything.', 'I have never been here before.']);
-    await say('Headmistress Thorne', c === 0 ? 'No. I don\'t suppose you do.' : 'Haven\'t you? The fountain seemed to know you. It splashed.');
+    const c = await choose(S.name, '(Her eyes are very steady. What do you say?)', [
+      '"I do not remember anything."',
+      '"I have never been here before."',
+      check('insight', 12, '"You have seen my face before. Haven\'t you?"'),
+      check('arcana', 12, '"Can a Quill be enchanted to write a name?"'),
+      { label: '"Prefect Aldous says it was written in his handwriting."', show: !!S.flags.wetInk },
+    ]);
+    if (c === 0) await say('Headmistress Thorne', 'No. I don\'t suppose you do.');
+    else if (c === 1) await say('Headmistress Thorne', 'Haven\'t you? The fountain seemed to know you. It splashed.');
+    else if (c === 2 && rolled) { S.flags.thornePortrait = true; await say(null, 'Her hand tightens on her staff, just for a moment.'); await say('Headmistress Thorne', 'Once. In a portrait that has not been painted yet. Ask me again when you are older. Much older.', { face: 'sad' }); }
+    else if (c === 2) await say('Headmistress Thorne', 'I have seen a great many faces. Yours is new to me.');
+    else if (c === 3 && rolled) await say('Headmistress Thorne', 'It can. It would take an Archwizard, and a very good reason. I know of only one person who could have done it, and they have not been born yet. Or so I thought.');
+    else if (c === 3) await say('Headmistress Thorne', 'Not by anyone in this school. Which is rather the point.');
+    else await say('Headmistress Thorne', 'And in mine, and in the Registrar\'s, and in the cook\'s, depending on who is reading it. The ink seems to want everyone to recognise it.');
     await say('Headmistress Thorne', 'Memory is a curious thing at Aldermere. It has a habit of finding its way home. Until yours does, you are a student here like any other.');
     await say('Headmistress Thorne', 'Step up to the Oracle Lantern beside me. It will see which House you belong to.');
     await sortingCeremony();
     const h = HOUSES[S.house];
+    if (S.flags.choseHouse) await say('Headmistress Thorne', 'You argued with the Lantern. Nobody argues with the Lantern. I think I am going to like you.', { face: 'happy' });
     await say('Headmistress Thorne', `${h.name} it is. Now, a warning. When the Lantern looked into you, it found no spark. Your magic is asleep, or it is gone.`, { face: 'sad' });
+    const r = await choose(S.name, '(The whole hall has gone quiet.)', [
+      '"Then I will wake it up."',
+      '"What if it never comes back?"',
+      houseOpt('ember', '"Then I will light it myself."'),
+      houseOpt('gale', '"Good. Starting from nothing means I can only go up."'),
+    ]);
+    if (r === 1) await say('Headmistress Thorne', 'Then you will be the first student I have ever had to teach from nothing. I have always wanted to try.', { face: 'happy' });
+    else await say('Headmistress Thorne', 'Good. Hold on to that.');
     await say('Headmistress Thorne', 'Most first-years arrive with a little magic already. You will start from nothing. Every Archwizard in our history began as an Initiate. A few of them began lower.');
     await say('Headmistress Thorne', 'Report to Instructor Brannoch at the Training Grounds, east of the courtyard. If anything can wake a sleeping spark, it is a training dummy that hits back.');
     S.flags.sorted = true;
     setGoal('Meet Instructor Brannoch at the Training Grounds (east of the courtyard).');
-  } else if (!S.flags.trained) await say('Headmistress Thorne', 'Go on. Brannoch is east of the courtyard.');
+    return;
+  }
+  if (!S.flags.trained) await say('Headmistress Thorne', 'Go on. Brannoch is east of the courtyard.');
   else if (!S.flags.chapter1) await say('Headmistress Thorne', 'The Library holds more answers than I do. Most days.');
-  else {
+  else if (!S.flags.thorneWarden) {
+    S.flags.thorneWarden = true;
     await say('Headmistress Thorne', 'So. You have met the Warden.');
     await say('Headmistress Thorne', 'Some doors in this school were locked by people we have not met yet. I always suspected one of them would come back for theirs.');
-  }
+  } else await say('Headmistress Thorne', 'Keep rising. I would like to meet the person who locked that door, and I suspect I will have to wait for you to become them.');
+  await ask('Headmistress Thorne', 'Was there something else?', [
+    { id: 'th_quill', label: 'Ask about the Admissions Quill.', run: async () => {
+      await say('Headmistress Thorne', 'It was carved from the first feather of the first owl to nest in the clocktower. Which is odd, because Aldermere has no clocktower.');
+    } },
+    { id: 'th_spark', label: '"Why did my magic disappear?"', run: async () => {
+      await say('Headmistress Thorne', 'Magic does not disappear. It gets spent. Whatever you did before you woke up in my courtyard, you spent all of it doing it.', { face: 'sad' });
+    } },
+    { id: 'th_more', ...check('insight', 14, '"You know more than you are telling me."'), show: !!S.flags.chapter1, run: async ok => {
+      if (ok) { S.items.ether += 2; await say('Headmistress Thorne', 'Of course I do. I am the Headmistress. But I will give you this much: the first time I met you, you were older than I am now, and you were crying.', { face: 'sad' }); await say(null, 'She presses two Ether Drops into your hand and will say no more.'); }
+      else await say('Headmistress Thorne', 'Knowing more than I tell is in the job description. Run along.');
+    } },
+  ], 'Thank her and go.');
 }
 
 async function sortingCeremony() {
@@ -1509,19 +1812,52 @@ async function sortingCeremony() {
     const i = await choose('Oracle Lantern', q, opts);
     last = HOUSE_ORDER[i]; tally[last]++;
   }
-  const best = HOUSE_ORDER.slice().sort((a, b) => (tally[b] - tally[a]) || ((b === last) - (a === last)))[0];
-  S.house = best;
-  await say('Oracle Lantern', `${HOUSES[best].name.toUpperCase()}! ${HOUSES[best].motto}.`);
+  const [best, second] = HOUSE_ORDER.slice().sort((a, b) => (tally[b] - tally[a]) || ((b === last) - (a === last)));
+  await say('Oracle Lantern', `The flame burns ${HOUSES[best].name} colours... but it flickers, as if it is not quite sure.`);
+  const c = await choose(S.name, '(You could let it decide. Or you could ask.)', [
+    `Let it choose ${HOUSES[best].name}.`,
+    `Ask for ${HOUSES[second].name} instead.`,
+  ]);
+  if (c === 1) { S.flags.choseHouse = true; await say('Oracle Lantern', 'The flame bends, considers, and turns a new colour. Choosing matters more than being chosen.'); }
+  S.house = c === 1 ? second : best;
+  await say('Oracle Lantern', `${HOUSES[S.house].name.toUpperCase()}! ${HOUSES[S.house].motto}.`);
 }
 
 async function talkLantern() {
   if (!S.house) return say(null, 'The Oracle Lantern burns a patient white. It seems to be waiting for the Headmistress.');
   await say(null, `The Lantern flickers ${HOUSES[S.house].name} colours as you pass. It already knows you.`);
+  await ask(null, '(The flame waits.)', [
+    { id: 'lan_spark', label: 'Ask it why it found no spark.', run: async () => {
+      await say(null, 'The flame shrinks a little, the way a person looks away when they have been asked something difficult. Then it points, very clearly, at the Library.');
+    } },
+    { id: 'lan_memory', ...check('arcana', 13, 'Reach into the flame and ask about your memories.'), run: async ok => {
+      if (ok) await say(null, 'For a moment the flame shows you a tower with a clock that has no numbers. Then it goes out completely, and relights, looking embarrassed.');
+      else await say(null, 'The flame singes your fingers. Fair enough.');
+    } },
+  ], 'Step back.');
 }
 
 async function talkGhost() {
-  await say('Sir Pemberton', 'I am Sir Pemberton the Partially Present. I died, but not entirely.');
-  await say('Sir Pemberton', 'You have the look of someone who has also misplaced a portion of themselves. It comes back, in my experience. Usually at inconvenient moments.');
+  if (!S.flags.ghostMet) {
+    S.flags.ghostMet = true;
+    await say('Sir Pemberton', 'I am Sir Pemberton the Partially Present. I died, but not entirely.');
+    await say('Sir Pemberton', 'You have the look of someone who has also misplaced a portion of themselves. It comes back, in my experience. Usually at inconvenient moments.');
+  } else await say('Sir Pemberton', S.flags.chapter1 ? 'Ah, the time-traveller. Do not look so surprised. Ghosts hear everything. Walls are very chatty.' : 'Good day, partial person! From one partial person to another.');
+  await ask('Sir Pemberton', 'Ask away. I have nothing but time. Literally.', [
+    { id: 'gh_died', label: '"How did you die?"', run: async () => {
+      await say('Sir Pemberton', 'Bravely! I charged a dragon. The dragon was in a painting. I charged straight through it and fell down the east stairs. On a Tuesday.');
+    } },
+    { id: 'gh_missing', label: '"Which part of you is missing?"', run: async () => {
+      await say('Sir Pemberton', 'My left boot and the memory of my mother\'s face. I would trade the boot back in a heartbeat. If I had one.', { face: 'sad' });
+    } },
+    { id: 'gh_seen', ...check('insight', 11, '"You have seen someone like me before."'), run: async ok => {
+      if (ok) { S.flags.ghostSaw = true; await say('Sir Pemberton', 'Forty years ago an old wizard walked into the Archive and sealed it behind them. Silver hair. Tired eyes. They had your eyes, child. Exactly your eyes.', { face: 'shocked' }); }
+      else await say('Sir Pemberton', 'Everyone looks the same to me. Faintly blurry and full of soup.');
+    } },
+    { id: 'gh_after', label: '"Will I remember everything, in the end?"', show: !!S.flags.chapter1, run: async () => {
+      await say('Sir Pemberton', 'Remembering is easy. Deciding what to do about it is the hard part. I remembered I was dead for thirty years before I did anything about it.');
+    } },
+  ], 'Bid him good day.');
 }
 
 async function talkBrannoch() {
@@ -1529,7 +1865,18 @@ async function talkBrannoch() {
   if (!S.flags.trained) {
     await say('Instructor Brannoch', 'So you are the one with no spark. Good. No bad habits to unlearn.', { face: 'happy' });
     await say('Instructor Brannoch', 'That dummy is enchanted to hit back. Gently. Mostly. When your gauge fills, pick Attack and give it a whack with your wand.');
-    await say('Instructor Brannoch', 'Focus draws magic back into you, once you have any to draw. Today you do not. Off you go.');
+    await say('Instructor Brannoch', 'Focus draws magic back into you, once you have any to draw. Today you do not.');
+    const c = await choose(S.name, '(The dummy turns its head toward you. It should not be able to do that.)', [
+      '"Ready."',
+      '"What if nothing happens?"',
+      '"It hits back? How hard?"',
+      check('intimidation', 10, '"I will break it in one swing."'),
+    ]);
+    if (c === 1) await say('Instructor Brannoch', 'Then you will have hit a dummy, which is still more than most first-years manage on day one.');
+    else if (c === 2) await say('Instructor Brannoch', 'About as hard as a disappointed aunt. You will live.');
+    else if (c === 3 && rolled) { S.flags.brannochLikes = true; await say('Instructor Brannoch', 'HA! I like you already. Go on then.', { face: 'happy' }); }
+    else if (c === 3) await say('Instructor Brannoch', 'Ha. That is what they all say. The dummy has a list.');
+    else await say('Instructor Brannoch', 'Off you go.');
     const r = await fight(['dummy'], { noFlee: true });
     if (r !== 'win') return;
     await say('Instructor Brannoch', 'There! Did you feel that? A spark! First time I have ever seen one wake up mid-swing.', { face: 'happy' });
@@ -1545,9 +1892,21 @@ async function talkBrannoch() {
     { label: 'Trial II: Crystal Golem', keys: ['cgolem'], line: 'A crystal golem from the observatory. It does not like being woken up. Bring Mira.' },
   ];
   if (S.flags.chapter1) trials.push({ label: 'Trial III: Echo of the Warden', keys: ['echo'], line: 'I bottled an echo of the thing in the Archive. It is not happy about it.' });
-  const opts = [...trials.map(t => t.label), 'Not now'];
+  const opts = [...trials.map(t => t.label), { label: 'Talk', show: ['br_brow', 'br_cassius', 'br_loose'].some(id => !S.flags['asked_' + id]) }, 'Not now'];
   const i = await choose('Instructor Brannoch', 'Fancy a Trial? Win and you earn experience. Lose and you earn humility.', opts);
-  if (i >= trials.length) return say('Instructor Brannoch', 'Suit yourself. The dummy is always here.');
+  if (i === trials.length) return ask('Instructor Brannoch', 'Talking, is it? Fine. Quickly.', [
+    { id: 'br_brow', label: 'Ask what happened to his eyebrow.', run: async () => {
+      await say('Instructor Brannoch', 'A student set it on fire in my first year of teaching. Best student I ever had. She is a dragon tamer now. I am very proud. I am also very bald on one side.');
+    } },
+    { id: 'br_cassius', label: 'Ask about Cassius Vane.', run: async () => {
+      await say('Instructor Brannoch', 'Talented. Angry. His father is a Governor of the school and has never once said "well done". Go easy on the boy. Or do not. He would hate that more.');
+    } },
+    { id: 'br_loose', ...check('insight', 12, '"You are worried about something on the grounds."'), run: async ok => {
+      if (ok) await say('Instructor Brannoch', 'Sharp. Fine. The things out there are not wandering in from the forest. They are coming from under the school, and every week there are more. Something is waking up.', { face: 'sad' });
+      else await say('Instructor Brannoch', 'Worried? I am never worried. I am occasionally concerned, loudly.');
+    } },
+  ], 'Back to training.');
+  if (i > trials.length) return say('Instructor Brannoch', 'Suit yourself. The dummy is always here.');
   await say('Instructor Brannoch', trials[i].line);
   const r = await fight(trials[i].keys, {});
   if (r === 'win') {
@@ -1568,6 +1927,18 @@ async function talkQuillon() {
   if (!S.flags.archiveOpen) await say('Librarian Quillon', 'The great seal at the north wall guards the Forbidden Archive. It only opens for someone it has met before. Which is nobody. It has been shut for forty years.');
   else if (!S.flags.chapter1) await say('Librarian Quillon', 'You opened it. You actually opened it. I am writing a very strongly worded letter to myself about this.', { face: 'shocked' });
   else await say('Librarian Quillon', 'Return any books you borrowed from the Archive. Even the ones that bite.');
+  await ask('Librarian Quillon', 'Can I help you find anything? Quietly.', [
+    { id: 'qu_mira', label: '"Was Mira really to blame for the Inkimps?"', run: async () => {
+      await say('Librarian Quillon', 'No. The Bestiary was opened from the inside. Mira only tried to close it. Do not tell her I said so. She enjoys feeling guilty. It helps her study.');
+    } },
+    { id: 'qu_seal', label: 'Ask who made the Archive seal.', run: async () => {
+      await say('Librarian Quillon', 'The records say "an old friend of the school". The handwriting on that entry is very shaky. And very familiar. I have been trying not to think about it.');
+    } },
+    { id: 'qu_time', ...check('arcana', 13, 'Ask about the blank book on temporal magic.'), run: async ok => {
+      if (ok) { S.items.ether += 1; await say('Librarian Quillon', 'You noticed the pages fill in when you walk past? Clever. Time magic writes itself into whoever is closest to it. Here, an Ether Drop. You will be needing your strength.', { face: 'shocked' }); }
+      else await say('Librarian Quillon', 'It is blank because the author ran out of time. That is the joke. Librarians have exactly one joke.');
+    } },
+  ], 'Leave her to the shelves.');
 }
 
 async function talkMira() {
@@ -1576,16 +1947,84 @@ async function talkMira() {
   await say('Mira', 'They are Inkimps. Pages that bite. They eat punctuation. Help me put them back before they get to the encyclopaedias!');
   const ms = miraStats(miraLv());
   S.mira = { hp: ms.maxhp, mp: ms.maxmp };
+  const c = await choose(S.name, '(Ink is dripping from the ceiling.)', [
+    '"I will help. Point me at them."',
+    '"Pages that bite? Are you serious?"',
+    '"What did you do?"',
+    check('arcana', 11, 'Look at the spell that held the book shut.'),
+  ]);
+  if (c === 0) { await say('Mira', 'Oh, I like you. Left flank! Is that a thing? That is a thing. Go!', { face: 'happy' }); approve('Mira', 1); }
+  else if (c === 1) await say('Mira', 'Deadly serious. One of them ate every full stop in my essay. It is just one long sentence now and it is AWFUL.');
+  else if (c === 2) { await say('Mira', 'I opened a book in a library! That is the whole job of a library!', { face: 'shocked' }); approve('Mira', -1); }
+  else if (rolled) { S.flags.miraInnocent = true; await say(null, 'The binding has been torn from the inside. Mira did not open this book. Something inside it wanted out.'); await say('Mira', 'You can see that? It wasn\'t me! I told Quillon it wasn\'t me!', { face: 'happy' }); approve('Mira', 2); }
+  else await say(null, 'The spell is a tangle of ink and panic. You cannot make sense of it.');
   S.flags.mira = true;
   await say(null, 'Mira joins your party!');
   const r = await fight(['inkimp', 'inkimp'], { noFlee: true });
   if (r !== 'win') { S.flags.mira = false; S.mira = null; return; }
   await say('Mira', 'Mira Fenwick. Tidewyrm, second year. And you are the Unwritten Student, aren\'t you? Everyone is talking about you.', { face: 'happy' });
-  await say('Mira', 'I have read every record in this library about the Admissions Quill. It has never added a name. Not once in six hundred years.');
-  await say('Mira', 'Except there is one place I have never been able to read. The Forbidden Archive, behind the seal at the north wall.');
+  await ask('Mira', 'Sorry. I talk a lot when I am nervous. Ask me something. Anything.', [
+    { id: 'mi_quill', label: 'Ask about the Admissions Quill.', run: async () => {
+      await say('Mira', 'I have read every record in this library about it. It has never added a name. Not once in six hundred years.');
+      await say('Mira', 'Except there is one place I have never been able to read. The Forbidden Archive, behind the seal at the north wall.');
+    } },
+    { id: 'mi_self', label: '"Tell me about yourself."', run: async () => {
+      await say('Mira', 'I want to be the Archivist one day. The person who knows where every book is, and every secret in them. Also I like soup. That is less ambitious.', { face: 'happy' });
+    } },
+    { id: 'mi_why', ...check('insight', 12, '"Why were you really reading the Bestiary?"'), run: async ok => {
+      if (ok) {
+        S.flags.miraDream = true;
+        await say('Mira', '...I have dreamt about this school since I was six. A tower with a clock that runs backwards. Someone calling my name from the top of it.', { face: 'sad' });
+        await say('Mira', 'The Bestiary mentions a clocktower. Nobody else has ever heard of one. I thought I was going mad. You do not look at me like I am mad.');
+        approve('Mira', 2);
+      } else await say('Mira', 'For research! I am always reading for research. That is what research is.');
+    } },
+  ], '"We should get moving."');
   await say('Mira', 'Seals answer to strong magic. Reach Adept rank and I bet it will at least look at you. I am coming too. For research.', { face: 'happy' });
   await say('Mira', 'Oh, and when we are both ready at the same moment, we can weave our spells together. Look for Tech in battle.');
+  await say(null, 'You can talk to Mira any time from the menu.');
   setGoal(S.lv >= 5 ? 'Examine the Archive seal at the north wall of the Library.' : 'Train to Adept rank (Lv 5): fight on the Training Grounds, then examine the Library seal.');
+}
+
+// Talking to Mira from the pause menu: a few conversations unlock as the story moves on, like talking at camp.
+function miraTopics() {
+  return [
+    { id: 'mc_term', label: '"How are you finding the term?"', run: async () => {
+      await say('Mira', 'Busy. Strange. Better since you turned up. Everything was very quiet before. I did not know I minded until it stopped.', { face: 'happy' });
+    } },
+    { id: 'mc_family', label: 'Ask about her family.', run: async () => {
+      await say('Mira', 'Fenwicks are all librarians and lighthouse keepers. People who keep things safe in the dark. I am the first one with a wand that works. Mostly.');
+      const c = await choose(S.name, '(She is twisting the end of her scarf.)', ['"They must be proud."', '"Mostly?"', check('persuasion', 11, '"You are braver than you think, Mira."')]);
+      if (c === 0) await say('Mira', 'They are. Loudly. In letters. Every week.', { face: 'happy' });
+      else if (c === 1) await say('Mira', 'It caught fire once. Only once. I do not want to talk about it.');
+      else if (rolled) { await say('Mira', '...You keep saying things like that as if you have known me for years. I like it. Please keep doing it.', { face: 'happy' }); approve('Mira', 2); }
+      else await say('Mira', 'Brave? I hid behind a bookshelf from a page this morning.');
+    } },
+    { id: 'mc_tower', ...memoryOpt(4, 'Tell her about the clocktower you remember.'), run: async () => {
+      await say('Mira', 'A clocktower? Hands running backwards? ...That is my dream. That is MY dream. How are you in my dream?', { face: 'shocked' });
+      await say('Mira', 'Okay. Okay. Either we are both mad or we are both right. I would rather be right with you than mad on my own.');
+      approve('Mira', 2);
+    } },
+    { id: 'mc_scared', label: '"Are you scared of what is in the Archive?"', show: !!S.flags.archiveOpen && !S.flags.chapter1, run: async () => {
+      await say('Mira', 'Terrified. But it said welcome BACK. To you. Whatever is in there has been waiting for you, and I want to know why. Being scared has never stopped me reading anything.');
+    } },
+    { id: 'mc_future', label: '"The Warden said I came from forty years ahead."', show: !!S.flags.chapter1, run: async () => {
+      await say('Mira', 'I have been thinking about that. If you came back, something must have gone very wrong up there. In the future. Do you think... was I there?', { face: 'sad' });
+      const c = await choose(S.name, '(She is looking at you very carefully.)', [
+        '"I think so. And I think I am here to fix it."',
+        '"I do not know yet."',
+        memoryOpt(9, '"There was a woman with red hair. In the frozen second. I did not reach her."'),
+      ]);
+      if (c === 0) { await say('Mira', 'Then we fix it together. Partners. No more coming back alone.', { face: 'happy' }); approve('Mira', 1); }
+      else if (c === 1) await say('Mira', 'That is alright. Not knowing is where all the best research starts.');
+      else { await say('Mira', '...Red hair. A Tidewyrm scarf.', { face: 'shocked' }); await say('Mira', 'Then this time, reach me. Promise.', { face: 'sad' }); approve('Mira', 3); }
+    } },
+  ];
+}
+async function talkToMira() {
+  const left = miraTopics().filter(t => t.show !== false && !S.flags['asked_' + t.id]);
+  if (!left.length) return say('Mira', fond('Mira') ? 'I am all talked out. But I am glad you asked. Ask me again when something dramatic happens. It will.' : 'Nothing new to report. Ask me again after something dramatic happens.');
+  await ask('Mira', fond('Mira') ? 'Oh! Hello. I was just thinking about you. About the case, I mean. What is it?' : 'What is it?', left, '"Never mind."');
 }
 
 async function gateScript() {
@@ -1598,6 +2037,16 @@ async function gateScript() {
   }
   await say(null, 'You press your palm to the seal. The circles turn, click by click, like a lock remembering its key.');
   await say('???', '...Welcome back.');
+  const c = await choose(S.name, '(The voice came from inside the stone.)', [
+    '"...Hello?"',
+    check('arcana', 12, 'Read the magic woven through the seal.'),
+    '"Mira, get behind me."',
+    memoryOpt(7, '"I made you. I remember the wax."'),
+  ]);
+  if (c === 0) await say('???', 'Hello, yourself. You took your time. Or rather, you have not taken it yet.');
+  else if (c === 1) await say(null, rolled ? 'The seal is keyed to a single magical signature. Yours. Older and stronger, but unmistakably yours.' : 'The magic is too old and too deep to read. It feels like looking down a well.');
+  else if (c === 2) { await say('Mira', 'Behind you? I am the one with the spells! ...But thank you.', { face: 'happy' }); approve('Mira', 1); }
+  else await say('???', 'Then you remember the promise. Come up. I have kept it safe.');
   await say('Mira', 'Did the door just say welcome BACK?', { face: 'shocked' });
   S.flags.archiveOpen = true;
   setGoal('Explore the Forbidden Archive. Something waits at the top. Magus rank (Lv 7) is wise.');
@@ -1606,16 +2055,44 @@ async function gateScript() {
 async function talkWarden() {
   await say('The Hollow Warden', 'Footsteps. After forty years, footsteps.');
   await say('The Hollow Warden', 'And yours, of all the footsteps in the world. You are early. You are so very early.');
-  const c = await choose(S.name, '(What do you say?)', ['Who are you?', 'Do you know me?']);
-  await say('The Hollow Warden', c === 0 ? 'I am the Warden. I keep what you left here.' : 'Better than you know yourself. That is the problem.');
+  const c = await choose(S.name, '(The clock in its chest ticks backwards. What do you say?)', [
+    '"Who are you?"',
+    '"Do you know me?"',
+    check('insight', 13, '"You do not want to fight me. You want to test me."'),
+    memoryOpt(7, '"I left you here. I remember the wax and the starlight."'),
+    '"Stand aside."',
+  ]);
+  let soft = false;
+  if (c === 0) await say('The Hollow Warden', 'I am the Warden. I keep what you left here.');
+  else if (c === 1) await say('The Hollow Warden', 'Better than you know yourself. That is the problem.');
+  else if (c === 2 && rolled) { soft = true; await say('The Hollow Warden', 'Clever. Yes. A test. I will hold back a little, but only a little. You made me promise to be hard on you.'); }
+  else if (c === 2) await say('The Hollow Warden', 'Wrong. I want to see you bleed a little. You would understand, if you remembered.');
+  else if (c === 3) { soft = true; await say(null, 'The Warden bows, very low, chains chiming.'); await say('The Hollow Warden', 'Then you remember the bargain. Good. I will still fight you. You made me swear it. But I will remember that you remembered.'); }
+  else await say('The Hollow Warden', 'You said exactly that, last time. The words were braver when you had magic behind them.');
   await say('The Hollow Warden', 'I do not hand it back to anyone who is not ready. Show me what you are now.');
-  const r = await fight(['warden'], { noFlee: true });
+  const base = FOES.warden.hp;
+  if (soft) FOES.warden.hp = Math.round(base * .8);
+  let r;
+  try { r = await fight(['warden'], { noFlee: true }); } finally { FOES.warden.hp = base; }
   if (r !== 'win') return;
   await say('The Hollow Warden', 'Enough. Enough. You are sharper than I expected.');
   await say('The Hollow Warden', 'Listen, then. The Quill wrote your name because you asked it to. You asked it forty years from now, as Archwizard of Aldermere.');
   await say('The Hollow Warden', 'You stepped backwards through time. The crossing took your memories as its toll. You knew it would, and you came anyway.');
   await say('The Hollow Warden', 'They are not destroyed. They return as your power returns. Rise to Archwizard and you will remember why you came.');
   await say('Mira', 'Forty years from now? ...Right. Okay. I am going to need a much bigger notebook.', { face: 'shocked' });
+  await ask('The Hollow Warden', 'Ask, then. I will answer what I am allowed to.', [
+    { id: 'wa_why', label: '"Why would I do this to myself?"', run: async () => {
+      await say('The Hollow Warden', 'Because something went wrong that could not be put right from where you stood. You will remember what. I swore not to spoil it.');
+    } },
+    { id: 'wa_mira', label: 'Ask about Mira.', run: async () => {
+      await say(null, 'The Warden looks at Mira for a long, long time. The clock in its chest stops ticking.');
+      await say('The Hollow Warden', 'Keep her close. That is all I am permitted to say.');
+      await say('Mira', '...Why is everyone suddenly very interested in me?', { face: 'shocked' });
+    } },
+    { id: 'wa_stay', label: '"Will you be here when I come back?"', run: async () => {
+      await say('The Hollow Warden', 'I am always here. That is the job. You gave it to me. It is a good job. Quiet. Excellent reading.');
+    } },
+  ], '"Thank you, Warden."');
   await say('The Hollow Warden', 'Go, Archwizard. Be quicker this time.');
   S.flags.chapter1 = true;
   setGoal('Rise to Archwizard (Lv 12). Brannoch\'s Trials are open to you.');
@@ -1624,9 +2101,18 @@ async function talkWarden() {
 
 async function finale() {
   await say('Mira', 'You went quiet just now. Are you alright?', { face: 'sad' });
-  const c = await choose(S.name, '(What do you say?)', ['I remember everything.', 'I\'m just glad you\'re here.']);
-  await say('Mira', c === 0 ? 'Then tell me. All of it. I have a bigger notebook now.' : 'That is a very strange thing to say to someone you met this term. ...I\'m glad you\'re here too.', { face: 'happy' });
-  await showCard('Archwizard', `<p>${esc(S.name)} has risen from Unawakened to Archwizard of Aldermere, forty years early.</p><p>Somewhere above the school, a clocktower that is on no map starts running forwards again. This is where the prototype ends.</p>`, 'Keep wandering');
+  const c = await choose(S.name, '(Everything has come back. All of it.)', [
+    '"I remember everything."',
+    '"I am just glad you are here."',
+    memoryOpt(9, '"Last time, I did not reach you in time."'),
+    { label: '"I think I came back for you."', show: fond('Mira') },
+  ]);
+  if (c === 0) await say('Mira', 'Then tell me. All of it. I have a bigger notebook now.', { face: 'happy' });
+  else if (c === 1) await say('Mira', 'That is a very strange thing to say to someone you met this term. ...I\'m glad you\'re here too.', { face: 'happy' });
+  else if (c === 2) { await say('Mira', '...The frozen second. The red hair. That was me, wasn\'t it?', { face: 'sad' }); await say('Mira', 'Well. You are in time now. So we are going to do it differently. Together.', { face: 'happy' }); }
+  else await say('Mira', 'You came back forty years for a girl who opens the wrong books. ...Good. I would have done the same.', { face: 'happy' });
+  const ending = fond('Mira') ? 'Mira has not let go of your hand since.' : 'Mira is already writing it all down.';
+  await showCard('Archwizard', `<p>${esc(S.name)} has risen from Unawakened to Archwizard of Aldermere, forty years early. ${ending}</p><p>Somewhere above the school, a clocktower that is on no map starts running forwards again. This is where the prototype ends.</p>`, 'Keep wandering');
 }
 
 function showCard(title, html, btn) {
@@ -1808,11 +2294,13 @@ function openPause() {
     $('pausebody').innerHTML = pauseHTML();
     $('pause').hidden = false;
     while (true) {
-      const i = await menu($('pausemenu'), [{ label: 'Resume' }, { label: 'Equipment', icon: 'Attack' }, { label: 'Save game' }, { label: 'Quit to title' }]);
-      if (i === 1) { await equipMenu(); continue; }
-      if (i === 2) { save(); toast('Game saved'); continue; }
+      const opts = [{ id: 'resume', label: 'Resume' }, { id: 'equip', label: 'Equipment', icon: 'Attack' }, ...(S.mira ? [{ id: 'mira', label: 'Talk to Mira', icon: 'heart' }] : []), { id: 'save', label: 'Save game' }, { id: 'quit', label: 'Quit to title' }];
+      const id = opts[await menu($('pausemenu'), opts)].id;
+      if (id === 'equip') { await equipMenu(); continue; }
+      if (id === 'save') { save(); toast('Game saved'); continue; }
       $('pause').hidden = true;
-      if (i === 3) { save(); MAP = null; titleFlow(); }
+      if (id === 'mira') { await talkToMira(); return; }
+      if (id === 'quit') { save(); MAP = null; titleFlow(); }
       return;
     }
   });
@@ -2122,6 +2610,9 @@ async function defeat() {
   loadMap('courtyard', 14, 10, 'up');
   await fadeIn();
   await say('Nurse Hollis', 'Back with us? Someone carried you out in a heap. It happens to every first-year at least once.');
+  const c = await choose(S.name, '(Everything aches.)', ['"Thank you."', '"Who carried me out?"', check('insight', 10, '"You have patched me up before. Haven\'t you?"')]);
+  if (c === 1) await say('Nurse Hollis', S.mira ? 'Miss Fenwick. She would not let anyone else touch you, and she cried the whole way. Do not tell her I told you.' : 'Prefect Aldous. He complained the entire way and then asked me twice if you would be alright.');
+  else if (c === 2) await say('Nurse Hollis', rolled ? 'Forty years ago, a very old wizard came in with that exact cut on that exact hand. I remember because they thanked me by name. I had not told them my name.' : 'I have patched up every student in this school. You all look the same with a bandage on.');
   await say('Nurse Hollis', 'You are patched up. Try not to do it again before lunch. The fountain is there if you need it.');
 }
 
@@ -2348,7 +2839,17 @@ async function newGame() {
   toast(MAP.name);
   await sleep(900);
   await say(name, '...Where am I?', { face: 'neutral' });
-  await say('Prefect Aldous', 'You! Yes, you, lying on the flagstones. Up you get. Orientation started ten minutes ago. Great Hall, north doors. Go!');
+  await say('Prefect Aldous', 'You! Yes, you, lying on the flagstones. Up you get. Orientation started ten minutes ago.');
+  const c = await choose(name, '(Your head is pounding. What do you do?)', [
+    'Get up. "Sorry. Which way?"',
+    '"Five more minutes."',
+    check('insight', 10, 'Study the boy with the prefect\'s badge.'),
+    '"Who are you? Who am I?"',
+  ]);
+  if (c === 1) await say('Prefect Aldous', 'Five more minutes is how first-years end up as statues in the east wing. Up!');
+  else if (c === 2) { if (rolled) S.flags.fountainHint = true; await say(null, rolled ? 'He is not angry. He is frightened. His hand is shaking, and he keeps glancing at the fountain as if it just did something it should not.' : 'He looks like every prefect ever: tired, stern, and about to give you detention.'); }
+  else if (c === 3) await say('Prefect Aldous', 'I am Prefect Aldous. You are late. Everything else is above my pay grade, which is nothing.');
+  await say('Prefect Aldous', 'Great Hall, north doors. Go!');
   lock--;
   save();
 }
