@@ -8,6 +8,7 @@ game draws it at, and writes the results into assets/. Re-run it after replacing
 """
 import os
 import subprocess
+from collections import deque
 import sys
 
 import numpy as np
@@ -22,18 +23,26 @@ def load(name):
     return Image.open(os.path.join(SRC, name)).convert('RGBA')
 
 
-def key_magenta(im):
-    """Make the magenta background transparent and clean the pink fringe around edges."""
+def key_magenta(im, strict=False):
+    """Make the magenta background transparent and clean the pink fringe around edges.
+
+    strict keys only colours very close to #FF00FF, for art that uses saturated purples."""
     a = np.array(im).astype(int)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
     pinkness = np.minimum(r, b) - g          # high for magenta, low for real colours
-    bg = (pinkness > 95) & (np.abs(r - b) < 110)
+    if strict:
+        bg = (r > 200) & (b > 200) & (g < 70) & (np.abs(r - b) < 45)
+    else:
+        bg = (pinkness > 95) & (np.abs(r - b) < 110)
     out = a.copy()
     out[bg, 3] = 0
     # fringe: pixels touching the background that are still noticeably pink get pulled back
     near = np.zeros_like(bg)
     near[1:, :] |= bg[:-1, :]; near[:-1, :] |= bg[1:, :]; near[:, 1:] |= bg[:, :-1]; near[:, :-1] |= bg[:, 1:]
-    fringe = near & ~bg & (pinkness > 35)
+    if strict:
+        fringe = near & ~bg & (r > 180) & (b > 180) & (g < 120)
+    else:
+        fringe = near & ~bg & (pinkness > 35)
     out[fringe, 3] = 0
     edge = near & ~bg & ~fringe
     # despill what remains on the edge: cap red and blue at green plus a margin
@@ -55,6 +64,77 @@ def shrink(im, size):
     out[keep, :3] = np.clip(rgb[keep], 0, 255)
     out[keep, 3] = 255
     return Image.fromarray(out, 'RGBA')
+
+
+def label(mask):
+    """4-connected component labels of a boolean mask (0 = background)."""
+    lab = np.zeros(mask.shape, int)
+    h, w = mask.shape
+    n = 0
+    for y0, x0 in zip(*np.nonzero(mask)):
+        if lab[y0, x0]:
+            continue
+        n += 1
+        lab[y0, x0] = n
+        todo = deque([(y0, x0)])
+        while todo:
+            y, x = todo.popleft()
+            for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not lab[ny, nx]:
+                    lab[ny, nx] = n
+                    todo.append((ny, nx))
+    return lab, n
+
+
+def foe_rows(im, rows, cols):
+    """Split a foe sheet into its poses: rows x cols groups of pixels, one group per pose.
+
+    Blobs are found on a quarter-size mask (so specks a few pixels apart join up) and given to the row
+    their centre falls in. Each row's cols heaviest blobs are the bodies; every other blob joins the
+    nearest body to its left, since attacks and spells fly to the right."""
+    a = np.array(im)
+    opaque = a[..., 3] > 0
+    q = 4
+    h, w = opaque.shape[0] // q, opaque.shape[1] // q
+    small = opaque[:h * q, :w * q].reshape(h, q, w, q).any((1, 3))
+    grown = small.copy()
+    grown[1:] |= small[:-1]; grown[:-1] |= small[1:]; grown[:, 1:] |= small[:, :-1]; grown[:, :-1] |= small[:, 1:]
+    lab, n = label(grown)
+    full = np.kron(lab, np.ones((q, q), int))
+    full = np.pad(full, ((0, opaque.shape[0] - full.shape[0]), (0, opaque.shape[1] - full.shape[1])))
+    full[~opaque] = 0
+    blobs = []
+    for i in range(1, n + 1):
+        ys, xs = np.nonzero(full == i)
+        if len(ys):
+            blobs.append({'id': i, 'mass': len(ys), 'cx': (xs.min() + xs.max()) / 2, 'cy': (ys.min() + ys.max()) / 2,
+                          'x0': xs.min(), 'x1': xs.max() + 1, 'y1': ys.max() + 1})
+    band = im.height / rows
+    out = []
+    for r in range(rows):
+        row = [b for b in blobs if int(b['cy'] // band) == r]
+        bodies = sorted(sorted(row, key=lambda b: -b['mass'])[:cols], key=lambda b: b['cx'])
+        if len(bodies) < cols:
+            raise SystemExit(f'row {r + 1}: found {len(bodies)} poses, expected {cols}')
+        groups = [[b['id']] for b in bodies]
+        for b in row:
+            if b in bodies:
+                continue
+            left = [i for i, body in enumerate(bodies) if body['cx'] <= b['cx']]
+            k = left[-1] if left else 0
+            groups[k].append(b['id'])
+        out.append([(np.where(np.isin(full, g)[..., None], a, 0).astype(np.uint8), body) for g, body in zip(groups, bodies)])
+    return out
+
+
+def foe_frames(poses, window, size):
+    """Crop one foe's poses to square frames centred on the body, sharing the row's lowest baseline."""
+    base = max(body['y1'] for _, body in poses) + 4
+    frames = []
+    for pix, body in poses:
+        cx = int((body['x0'] + body['x1']) / 2)
+        frames.append(shrink(Image.fromarray(pix, 'RGBA').crop((cx - window // 2, base - window, cx + window // 2, base)), (size, size)))
+    return frames
 
 
 def cells(im, cols, rows):
@@ -97,7 +177,7 @@ def build():
 
     # Portraits: 2x2 grid -> one row of 4 x 128px (neutral, happy, shocked, sad).
     # The background stays transparent; the dialogue box draws its own backdrop.
-    for who in ('hero', 'mira', 'thorne', 'brannoch', 'quillon'):
+    for who in PORTRAITS:
         src = key_magenta(load(f'portrait_{who}_gen.png'))
         grid = cells(src, 2, 2)
         row = Image.new('RGBA', (128 * 4, 128))
@@ -135,6 +215,38 @@ def build():
     mira.save(tmp)
     subprocess.run([sys.executable, os.path.join(HERE, 'process_sheet.py'), tmp, os.path.join(ASSETS, 'mira_field.png')], check=True)
     os.remove(tmp)
+
+    # NPC walking sheets: same layout and cleanup as the hero sheet
+    for who in NPCS:
+        keyed = key_magenta(load(f'npc_{who}_gen.png'))
+        tmp = os.path.join(SRC, f'_npc_{who}_keyed.png')
+        keyed.save(tmp)
+        subprocess.run([sys.executable, os.path.join(HERE, 'process_sheet.py'), tmp, os.path.join(ASSETS, f'npc_{who}.png')], check=True)
+        os.remove(tmp)
+
+    # Enemy sheets: each row of a 6x4 source is one foe (poses 1-4 idle, 5-6 attack).
+    # Game layout is 4x2: row 1 idle x4; row 2 attack 1, attack 2, attack 2 held, then hurt (the first idle pose; the game flashes it).
+    for sheet, arts in FOE_SHEETS.items():
+        for poses, art in zip(foe_rows(key_magenta(load(sheet), strict=True), 4, 6), arts):
+            big = art in BIG_FOES
+            f = 96 if big else 64
+            frames = foe_frames(poses, 288 if big else 256, f)
+            out = Image.new('RGBA', (f * 4, f * 2))
+            for i, fr in enumerate(frames[:4] + [frames[4], frames[5], frames[5], frames[0]]):
+                out.paste(fr, ((i % 4) * f, (i // 4) * f))
+            save(out, f'foe_{art}.png')
+
+
+PORTRAITS = ('hero', 'mira', 'thorne', 'brannoch', 'quillon', 'aldous', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony', 'warden', 'nurse')
+NPCS = ('aldous', 'thorne', 'brannoch', 'quillon', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony')
+# Source sheet -> foe art id for each of its four rows
+FOE_SHEETS = {
+    'foes_a_gen.png': ('dummy', 'imp', 'broom', 'wisp'),
+    'foes_b_gen.png': ('toad', 'slime', 'emberslime', 'moth'),
+    'foes_c_gen.png': ('shroom', 'gargoyle', 'shade', 'scarab'),
+    'foes_d_gen.png': ('bone', 'apprentice', 'cgolem', 'echo'),
+}
+BIG_FOES = {'gargoyle', 'shade', 'bone', 'apprentice', 'cgolem', 'echo'}
 
 
 if __name__ == '__main__':

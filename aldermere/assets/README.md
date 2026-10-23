@@ -17,9 +17,9 @@ To clean up a single ChatGPT sheet before adding it, run `python3 ../tools/proce
 |---|---|---|
 | `hero_field.png` ✅ | 6 cols × 4 rows of 64×64. Rows: down, left, right, up. Cols 1–2 idle, 3–6 walk. Scarf drawn red; the game recolours it per House. | Player on the map and in battle |
 | `mira_field.png` ✅ | Same layout as the hero | Mira on the map and in battle |
-| `npc_<id>.png` | Same layout as the hero. Ids: `thorne`, `aldous`, `brannoch`, `quillon`, `pell`, `juniper`, `tobias`, `ghost` | Named NPCs |
-| `portrait_<id>.png` ✅ hero, mira, thorne, brannoch, quillon | Square cells side by side: neutral, happy, shocked, sad (128px each). Ids as above plus `hero`, `mira`, `warden` | Dialogue box portrait and battle panel face |
-| `foe_<art>.png` | 4 cols × 2 rows of 64×64 (`foe_warden.png`: 128×128). Row 1 idle ×4; row 2 attack ×3, then hurt. Arts: `dummy`, `imp`, `broom`, `wisp`, `toad`, `gargoyle`, `shade`, `warden` | Enemies on the map and in battle |
+| `npc_<id>.png` ✅ | Same layout as the hero. Ids: `thorne`, `aldous`, `brannoch`, `quillon`, `pell`, `juniper`, `tobias`, `ghost`, `hob`, `cassius`, `chef`, `bryony` | Named NPCs (Cassius also in his duel) |
+| `portrait_<id>.png` ✅ | Square cells side by side: neutral, happy, shocked, sad (128px each). Ids as above plus `hero`, `mira`, `warden`, `nurse` | Dialogue box portrait and battle panel face |
+| `foe_<art>.png` ✅ all but `warden` | 4 cols × 2 rows of square frames: 64px for small foes, 96px for big ones (`gargoyle`, `shade`, `bone`, `apprentice`, `cgolem`, `echo`). Row 1 idle ×4; row 2 attack ×3, then hurt. Arts: `dummy`, `imp`, `broom`, `wisp`, `toad`, `slime`, `emberslime`, `moth`, `shroom`, `scarab`, `gargoyle`, `shade`, `bone`, `apprentice`, `cgolem`, `echo`, `warden` | Enemies on the map and in battle. Built from `source/foes_[a-d]_gen.png` (one foe per row: 4 idle poses, 2 attack poses) |
 | `tiles.png` ✅ | 6 cols × 4 rows of 32×32 tiles, in the order below | Every map |
 | `tile_fountain.png` ✅ | 64×64 | Courtyard fountain, drawn across 2×2 tiles |
 | `fx_<element>.png` | 8 cols × 2 rows of 64×64. Row 1: 4-frame projectile loop (cols 1–4). Row 2: 8-frame impact. Elements: `fire`, `water`, `earth`, `air`, `arcane`, `light`, `shadow`, `time` | Spell effects |

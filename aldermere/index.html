@@ -116,6 +116,14 @@ canvas#cv { display: block; width: 100%; height: 100%; image-rendering: pixelate
 #goal { top: 3%; left: 2%; max-width: 46%; padding: .45em .8em .45em; font-size: clamp(10px, 1.6vw, 16px); font-size: clamp(10px, 1.6cqw, 16px); line-height: 1.3; --win-top: rgba(28,34,70,.9); --win-bot: rgba(14,17,38,.9); }
 #goal .tab { position: absolute; top: 0; left: .7em; transform: translateY(-60%); font-size: .8em; }
 #goal .g { display: block; margin-top: .25em; }
+#goal { cursor: pointer; transition: opacity .25s; touch-action: manipulation; }
+#goal.min, #goal.hush, .skinned #goal.min, .skinned #goal.hush { padding: 0; background: none; border-color: transparent; border-image: none; box-shadow: none; }
+#goal.min .tab, #goal.hush .tab { position: static; transform: none; display: inline-block; }
+#goal.min .g, #goal.hush .g { display: none; }
+#goal .tab::after { content: ' \25BE'; }
+#goal.min .tab::after, #goal.hush .tab::after { content: ' \25B8'; }
+#goal.behind, #banner.behind { opacity: .22; }
+#toast.on.behind { opacity: .3; }
 #toast {
   top: 15%; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
   font-family: var(--display); font-size: clamp(15px, 3.4vw, 40px); font-size: clamp(15px, 3.4cqw, 40px); color: var(--gold);
@@ -412,7 +420,7 @@ const FOES = {
   apprentice: { name: 'Dark Apprentice', hp: 95, atk: 10, mag: 19, def: 7, spd: 12, xp: 95, weak: ['light'], art: 'apprentice', acts: ['spell', 'all'], elem: 'shadow', spellName: 'Hex Bolt', allName: 'Shadow Verse' },
   cgolem:   { name: 'Crystal Golem', hp: 220, atk: 24, mag: 14, def: 16, spd: 7, xp: 170, weak: ['earth'], resist: ['fire', 'water'], art: 'cgolem', acts: ['hit', 'hit', 'all'], elem: 'arcane', allName: 'Prism Crash' },
   rival:    { name: 'Cassius Vane', hp: 120, atk: 9, mag: 10, def: 5, spd: 11, xp: 90, art: 'rival', walker: 'cassius', acts: ['hit', 'spell', 'spell'], elem: 'fire', spellName: 'Showy Flame' },
-  echo:     { name: 'Warden Echo', hp: 340, atk: 28, mag: 30, def: 14, spd: 12, xp: 360, weak: ['light'], art: 'warden', acts: ['hit', 'spell', 'all'], elem: 'time', spellName: 'Unwind', allName: 'Clockstorm' },
+  echo:     { name: 'Warden Echo', hp: 340, atk: 28, mag: 30, def: 14, spd: 12, xp: 360, weak: ['light'], art: 'echo', acts: ['hit', 'spell', 'all'], elem: 'time', spellName: 'Unwind', allName: 'Clockstorm' },
 };
 
 // ---------------------------------------------------------------- maps (30 x 17 tiles; the camera shows 480x270)
@@ -621,6 +629,9 @@ const AVAILABLE = [
   'hero_field.png', 'mira_field.png', 'tiles.png', 'tile_fountain.png', 'ui_window.png', 'icons.png', 'crests.png',
   'portrait_hero.png', 'portrait_mira.png', 'portrait_thorne.png', 'portrait_brannoch.png', 'portrait_quillon.png',
   'title_bg.png', 'logo.png', 'btn_dpad.png', 'btn_a.png', 'btn_b.png', 'btn_menu.png',
+  ...['aldous', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony', 'warden', 'nurse'].map(id => `portrait_${id}.png`),
+  ...['aldous', 'thorne', 'brannoch', 'quillon', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony'].map(id => `npc_${id}.png`),
+  ...['dummy', 'imp', 'broom', 'wisp', 'toad', 'slime', 'emberslime', 'moth', 'shroom', 'scarab', 'gargoyle', 'shade', 'bone', 'apprentice', 'cgolem', 'echo'].map(a => `foe_${a}.png`),
 ];
 // Sprites from the Magic Academy Art Pack (assets/pack/, native 1x pixel art drawn at half size so each pixel is exact)
 const PACK = {
@@ -720,7 +731,7 @@ function drawPackFoe(art, cx, cy, t, state, field) {
   return true;
 }
 const foeScale = c => (FOE_PACK[c.art] && packImg('foe', FOE_PACK[c.art][0])) ? FOE_PACK[c.art][1] : 1;
-// Foe sheets: 4 cols x 2 rows (row 0 idle x4; row 1 attack x3 then hurt). Centred on (cx, cy).
+// Foe sheets: 4 cols x 2 rows (row 0 idle x4; row 1 attack x3 then hurt). Centred on (cx, cy), drawn at half the frame size times mul.
 function drawFoeSprite(art, cx, cy, t, state, mul = 1) {
   const im = IMG[`foe_${art}.png`];
   if (!im) return false;
@@ -862,6 +873,7 @@ document.querySelectorAll('.abtns button').forEach(b => {
 });
 document.querySelectorAll('#pad, #stage').forEach(el => el.addEventListener('contextmenu', e => e.preventDefault()));
 $('nameform').addEventListener('submit', e => e.preventDefault());
+$('goal').addEventListener('pointerdown', e => toggleGoal(e));
 let canvasPick = null;
 cv.addEventListener('pointerdown', e => {
   if (!canvasPick) return;
@@ -903,12 +915,12 @@ function menu(el, items, { start = 0, noCancel = false } = {}) {
   });
 }
 
-// Portraits: assets/portrait_<id>.png (3 square cells: neutral, happy, shocked). Until then, a close-up of the field sprite.
+// Portraits: assets/portrait_<id>.png (4 square cells: neutral, happy, shocked, sad). Until then, a close-up of the field sprite.
 const SPEAKERS = {
   'Headmistress Thorne': 'thorne', 'Prefect Aldous': 'aldous', 'Instructor Brannoch': 'brannoch', 'Librarian Quillon': 'quillon',
   'Mira': 'mira', 'Pell': 'pell', 'Juniper': 'juniper', 'Tobias': 'tobias', 'Sir Pemberton': 'ghost',
   'The Hollow Warden': 'warden', 'Oracle Lantern': 'lantern',
-  'Hob': 'hob', 'Cassius Vane': 'cassius', 'Madame Pottage': 'chef', 'Bryony': 'bryony',
+  'Hob': 'hob', 'Cassius Vane': 'cassius', 'Madame Pottage': 'chef', 'Bryony': 'bryony', 'Nurse Hollis': 'nurse',
 };
 const FACES = { neutral: 0, happy: 1, shocked: 2, sad: 3 };
 const pctx = $('portrait').getContext('2d');
@@ -996,14 +1008,37 @@ async function fadeOut() { $('fade').classList.add('on'); await sleep(reduceMoti
 async function fadeIn() { $('fade').classList.remove('on'); await sleep(reduceMotion ? 60 : 420); }
 async function run(fn) { lock++; try { await fn(); } finally { lock--; save(); } }
 
-let goalKey = '';
+// The goal panel opens when the goal changes, folds down to its tab after a few seconds, and opens or folds on a tap.
+// It also folds while dialogue or a map title is up. Any message at the top of the screen fades while the player walks behind it.
+let goalKey = '', goalFoldAt = 0;
+const GOAL_OPEN_MS = 5000;
+function openGoal() { $('goal').classList.remove('min'); goalFoldAt = performance.now() + GOAL_OPEN_MS; }
+function toggleGoal(e) {
+  e.preventDefault();
+  if ($('goal').classList.contains('min')) openGoal(); else { $('goal').classList.add('min'); goalFoldAt = 0; }
+}
+function playerScreenBox() {
+  if (mode !== 'explore' || !P) return null;
+  const [x, y] = pPos(), r = $('cv').getBoundingClientRect(), k = r.width / W;
+  return { left: r.left + (x - cam.x) * k, right: r.left + (x - cam.x + 16) * k, top: r.top + (y - cam.y - 20) * k, bottom: r.top + (y - cam.y + 14) * k };
+}
+const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+function fadeIfBehind(el, me) { const on = !!me && !el.hidden && overlaps(el.getBoundingClientRect(), me); if (el.classList.contains('behind') !== on) el.classList.toggle('behind', on); }
 function updateHUD() {
   const g = $('goal');
   const show = mode === 'explore' && S && MAP && $('pause').hidden && $('card').hidden;
   if (g.hidden === show) g.hidden = !show;
+  const me = playerScreenBox();
+  fadeIfBehind($('banner'), me);
+  fadeIfBehind($('toast'), $('toast').classList.contains('on') ? me : null);
   if (!show) return;
   const key = S.lv + '|' + S.goal;
-  if (key !== goalKey) { goalKey = key; g.innerHTML = `<span class="tab">Lv ${S.lv} &middot; ${esc(rankOf(S.lv))}</span><span class="g">${esc(S.goal)}</span>`; }
+  if (key !== goalKey) { goalKey = key; g.innerHTML = `<span class="tab">Lv ${S.lv} &middot; ${esc(rankOf(S.lv))}</span><span class="g">${esc(S.goal)}</span>`; openGoal(); }
+  if (goalFoldAt && performance.now() > goalFoldAt) { g.classList.add('min'); goalFoldAt = 0; }
+  const hush = handlers.length > 0 || $('toast').classList.contains('on');
+  if (g.classList.contains('hush') !== hush) g.classList.toggle('hush', hush);
+  if (hush && goalFoldAt) goalFoldAt = performance.now() + GOAL_OPEN_MS; // the open time counts from when it can be read
+  fadeIfBehind(g, me);
 }
 
 // ---------------------------------------------------------------- drawing primitives
@@ -1146,8 +1181,11 @@ function drawPerson(x, y, o) {
   if (hat) { px(x + 3, y + 2, 10, 1, hat); px(x + 5, y, 6, 2, hat); px(x + 6, y - 2, 4, 2, hat); px(x + 8, y - 4, 2, 2, hat); }
 }
 
+// k < 1 draws a smaller copy for the field map (k scales the Warden directly).
 function drawFoe(art, cx, cy, t, k = 1, state) {
-  if (drawFoeSprite(art, cx, cy, t, state, art === 'warden' ? k : 1)) return;
+  const hd = IMG[`foe_${art}.png`];
+  if (drawFoeSprite(art, cx, cy, t, state, art === 'warden' ? k : k < 1 ? (hd && hd.width > 256 ? .55 : .75) : 1)) return;
+  if (art === 'echo') return drawFoe('warden', cx, cy, t, k * .75, state);
   if (drawPackFoe(art, cx, cy, t, state, k < 1)) return;
   const x = Math.round(cx), y = Math.round(cy);
   switch (art) {
@@ -1229,8 +1267,8 @@ function drawNPC(n, t, ox = 0, oy = 0) {
       px(x + 3, y + 13, 10, 2, '#7a6a3a'); px(x + 3, y + 18, 10, 2, 'rgba(0,0,0,.25)');
       break;
     }
-    case 'dummy': drawFoe('dummy', x + 8, y + 6, t); break;
-    case 'imps': drawFoe('imp', x + 5, y + 6, t); drawFoe('imp', x + 12, y + 12, t + 1); break;
+    case 'dummy': drawFoe('dummy', x + 8, y + 6, t, .75); break;
+    case 'imps': drawFoe('imp', x + 5, y + 6, t, .75); drawFoe('imp', x + 12, y + 12, t + 1, .75); break;
     case 'warden': drawFoe('warden', x + 8, y + 2, t, .55); break;
   }
 }
@@ -2142,7 +2180,7 @@ function drawCombatant(c) {
     else if (!drawWalker(sheet, c.bx - 8 + ox, c.by + 5, 'left', c.atb >= 100 || lunging, B.t))
       drawPerson(c.bx - 8 + ox, c.by - 10, { ...look, dir: 'left', step: c.atb >= 100 ? ((B.t * 4) | 0) % 2 : 0 });
   } else if (c.walker && npcSheet(c.walker)) drawWalker(npcSheet(c.walker), c.bx - 8 + ox, c.by + 8, 'right', lunging, B.t, lunging);
-  else drawFoe(c.art, c.bx + ox, c.by, B.t, c.key === 'echo' ? .75 : 1, hurt ? 'hurt' : lunging ? 'attack' : 'idle');
+  else drawFoe(c.art, c.bx + ox, c.by, B.t, 1, hurt ? 'hurt' : lunging ? 'attack' : 'idle');
   ctx.globalAlpha = 1;
 }
 const famPos = () => { const h = B.party.find(p => p.id === 'hero'); return { bx: h.bx + 22, by: h.by + 14 }; };
@@ -2165,7 +2203,8 @@ async function famAssist() {
 }
 function drawCursor(c) {
   const bob = Math.sin(B.t * 8) * 1.5;
-  const top = c.ally || c.walker ? c.by - 30 : c.by - (c.art === 'warden' ? (c.key === 'echo' ? 30 : 38) : foeScale(c) > 1 ? 34 : 20);
+  const hd = IMG[`foe_${c.art}.png`];
+  const top = c.ally || c.walker ? c.by - 30 : hd ? c.by - Math.round(hd.width / 8 * .62) : c.by - (c.art === 'warden' ? 38 : c.art === 'echo' ? 30 : foeScale(c) > 1 ? 34 : 20);
   fill('#e2b25a');
   ctx.beginPath(); ctx.moveTo(c.bx - 4, top - 6 + bob); ctx.lineTo(c.bx + 4, top - 6 + bob); ctx.lineTo(c.bx, top + bob); ctx.fill();
   if (!c.ally) { px(c.bx - 12, c.by + 18, 24, 3, '#0b0d18'); px(c.bx - 12, c.by + 18, 24 * c.hp / c.maxhp, 3, c.hp / c.maxhp > .35 ? '#2fb3a8' : '#d23f3a'); }
