@@ -321,6 +321,19 @@ def build():
         sheet.paste(ic, ((i % 6) * 48, (i // 6) * 48))
     save(sheet, 'gear48.png')
 
+    # Opening cinematic: the city (wider than the screen, so it can pan), a close-up, the bike rider (6 frames) and the bus
+    city = load('cine_city_gen.png').convert('RGB')
+    save(city.resize((1280, 720), Image.LANCZOS).convert('RGBA'), 'cine_city.png')
+    save(load('cine_closeup_gen.png').convert('RGB').resize((960, 540), Image.LANCZOS).convert('RGBA'), 'cine_closeup.png')
+    bike = cells(key_magenta(load('cine_bike_gen.png')), 3, 2)
+    strip = Image.new('RGBA', (160 * 6, 128))
+    for i, c in enumerate(bike[0] + bike[1]):  # same crop for every frame so the bike does not jump
+        c = c.crop((0, c.height - 460, c.width, c.height - 20))
+        strip.paste(shrink(c, (160, round(160 * c.height / c.width))), (i * 160, 128 - round(160 * c.height / c.width)))
+    save(strip, 'cine_bike.png')
+    bus = bbox_crop(key_magenta(load('cine_bus_gen.png')), 2)
+    save(shrink(bus, (640, round(640 * bus.height / bus.width))), 'cine_bus.png')
+
 
 PORTRAITS = ('hero', 'mira', 'thorne', 'brannoch', 'quillon', 'aldous', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony', 'warden', 'nurse')
 NPCS = ('aldous', 'thorne', 'brannoch', 'quillon', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony')

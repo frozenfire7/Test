@@ -642,7 +642,7 @@ const heroLook = () => ({ robe: '#1f2a5a', trim: S && S.house ? HOUSES[S.house].
 const AVAILABLE = [
   'hero_field.png', 'mira_field.png', 'tiles.png', 'tile_fountain.png', 'ui_window.png', 'icons.png', 'crests.png',
   'portrait_hero.png', 'portrait_mira.png', 'portrait_thorne.png', 'portrait_brannoch.png', 'portrait_quillon.png',
-  'title_bg.png', 'logo.png', 'btn_dpad.png', 'btn_a.png', 'btn_b.png', 'btn_menu.png',
+  'title_bg.png', 'logo.png', 'cine_city.png', 'cine_closeup.png', 'cine_bike.png', 'cine_bus.png', 'btn_dpad.png', 'btn_a.png', 'btn_b.png', 'btn_menu.png',
   ...['aldous', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony', 'warden', 'nurse'].map(id => `portrait_${id}.png`),
   ...['aldous', 'thorne', 'brannoch', 'quillon', 'pell', 'juniper', 'tobias', 'ghost', 'hob', 'cassius', 'chef', 'bryony'].map(id => `npc_${id}.png`),
   ...['dummy', 'imp', 'broom', 'wisp', 'toad', 'slime', 'emberslime', 'moth', 'shroom', 'scarab', 'gargoyle', 'shade', 'bone', 'apprentice', 'cgolem', 'echo', 'warden'].map(a => `foe_${a}.png`),
@@ -1750,6 +1750,7 @@ async function talkThorne() {
       check('insight', 12, '"You have seen my face before. Haven\'t you?"'),
       check('arcana', 12, '"Can a Quill be enchanted to write a name?"'),
       { label: '"Prefect Aldous says it was written in his handwriting."', show: !!S.flags.wetInk },
+      '"Last thing I remember, I was in Chicago and a bus hit me."',
     ]);
     if (c === 0) await say('Headmistress Thorne', 'No. I don\'t suppose you do.');
     else if (c === 1) await say('Headmistress Thorne', 'Haven\'t you? The fountain seemed to know you. It splashed.');
@@ -1757,7 +1758,8 @@ async function talkThorne() {
     else if (c === 2) await say('Headmistress Thorne', 'I have seen a great many faces. Yours is new to me.');
     else if (c === 3 && rolled) await say('Headmistress Thorne', 'It can. It would take an Archwizard, and a very good reason. I know of only one person who could have done it, and they have not been born yet. Or so I thought.');
     else if (c === 3) await say('Headmistress Thorne', 'Not by anyone in this school. Which is rather the point.');
-    else await say('Headmistress Thorne', 'And in mine, and in the Registrar\'s, and in the cook\'s, depending on who is reading it. The ink seems to want everyone to recognise it.');
+    else if (c === 4) await say('Headmistress Thorne', 'And in mine, and in the Registrar\'s, and in the cook\'s, depending on who is reading it. The ink seems to want everyone to recognise it.');
+    else { S.flags.toldChicago = true; await say('Headmistress Thorne', 'I do not know what a Chicago is, or a bus. But you are not the first to arrive here from a world that ended badly. The Quill only writes names that have somewhere left to go.', { face: 'sad' }); }
     await say('Headmistress Thorne', 'Memory is a curious thing at Aldermere. It has a habit of finding its way home. Until yours does, you are a student here like any other.');
     await say('Headmistress Thorne', 'Step up to the Oracle Lantern beside me. It will see which House you belong to.');
     await sortingCeremony();
@@ -2616,6 +2618,159 @@ async function defeat() {
   await say('Nurse Hollis', 'You are patched up. Try not to do it again before lunch. The fountain is there if you need it.');
 }
 
+// ---------------------------------------------------------------- opening cinematic
+// About 30 seconds: a bike ride through a Chicago storm, a bus, a white light, and another world. Tap or press A to skip.
+// Sound is made with Web Audio, so there are no audio files. Lightning is softened when the player prefers reduced motion.
+const CINE_LEN = 31;
+const CINE_LINES = [
+  [1.0, 4.2, 'Chicago. 11:48 PM.'],
+  [4.6, 8.2, 'Last shift ran late again. Twelve blocks to go.'],
+  [8.6, 12.0, 'The rain is so loud you can barely hear the L overhead.'],
+  [12.4, 14.6, 'Then: light.'],
+  [15.2, 19.0, 'Huh. So this is how it ends.'],
+  [21.0, 23.4, '...'],
+  [23.6, 26.0, 'It does not hurt. It is warm. Like being written down.'],
+  [26.6, 30.4, 'Somewhere very far away, a bell begins to ring.'],
+];
+let CINE = null;
+let audio = null;
+function sfx() {
+  if (audio) { if (audio.ctx.state === 'suspended') audio.ctx.resume(); return audio; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  const ac = new AC(), out = ac.createGain();
+  out.gain.value = .5; out.connect(ac.destination);
+  const noise = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), d = noise.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  audio = { ctx: ac, out, noise };
+  return audio;
+}
+// one shaped burst of filtered noise (rain, thunder, splash, impact)
+function noiseBurst(a, { type = 'lowpass', freq = 800, q = 0, gain = .5, attack = .01, hold = 0, release = .5, at = 0, loop = false }) {
+  const t = a.ctx.currentTime + at, src = a.ctx.createBufferSource(), f = a.ctx.createBiquadFilter(), g = a.ctx.createGain();
+  src.buffer = a.noise; src.loop = loop; f.type = type; f.frequency.value = freq; f.Q.value = q;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + attack);
+  if (!loop) { g.gain.setValueAtTime(gain, t + attack + hold); g.gain.exponentialRampToValueAtTime(.0001, t + attack + hold + release); }
+  src.connect(f); f.connect(g); g.connect(a.out); src.start(t);
+  if (!loop) src.stop(t + attack + hold + release + .1);
+  return { src, g, f };
+}
+function tone(a, { type = 'sine', freq = 440, to, gain = .2, attack = .01, hold = 0, release = .4, at = 0 }) {
+  const t = a.ctx.currentTime + at, o = a.ctx.createOscillator(), g = a.ctx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t); if (to) o.frequency.exponentialRampToValueAtTime(to, t + attack + hold + release);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + attack); g.gain.setValueAtTime(gain, t + attack + hold); g.gain.exponentialRampToValueAtTime(.0001, t + attack + hold + release);
+  o.connect(g); g.connect(a.out); o.start(t); o.stop(t + attack + hold + release + .1);
+}
+const thunder = (a, at, gain = .7) => { noiseBurst(a, { freq: 140, gain, attack: .05, hold: .3, release: 2.6, at }); noiseBurst(a, { freq: 900, gain: gain * .4, attack: .005, release: .5, at }); };
+// The script of sounds, keyed to the cinematic clock
+const CINE_SOUNDS = [
+  [0, a => { CINE.rain = noiseBurst(a, { type: 'bandpass', freq: 2600, q: .6, gain: 0, loop: true }); CINE.rain.g.gain.linearRampToValueAtTime(.35, a.ctx.currentTime + 2.5); }],
+  [3.2, a => thunder(a, .2, .55)],
+  [6.0, a => { for (let k = 0; k < 3; k++) noiseBurst(a, { type: 'bandpass', freq: 500, q: 2, gain: .18, attack: .2, hold: .6, release: .8, at: k * .05 }); }], // the L train passing above
+  [9.4, a => thunder(a, .3, .8)],
+  [12.2, a => { tone(a, { type: 'sawtooth', freq: 311, gain: .16, attack: .03, hold: 1.4, release: .3 }); tone(a, { type: 'sawtooth', freq: 370, gain: .14, attack: .03, hold: 1.4, release: .3 }); }], // bus horn
+  [14.8, a => { CINE.rain.f.frequency.linearRampToValueAtTime(500, a.ctx.currentTime + 1.5); CINE.rain.g.gain.linearRampToValueAtTime(.12, a.ctx.currentTime + 1.5); }], // slow motion: the rain goes muffled
+  [15.4, a => { for (let k = 0; k < 4; k++) { tone(a, { freq: 60, gain: .5, attack: .01, release: .25, at: k * 1.05 }); tone(a, { freq: 52, gain: .4, attack: .01, release: .3, at: k * 1.05 + .28 }); } }], // heartbeat
+  [19.6, a => { noiseBurst(a, { freq: 2400, gain: .9, attack: .002, release: .5 }); tone(a, { freq: 70, to: 30, gain: .8, attack: .005, release: .9 }); CINE.rain.g.gain.setValueAtTime(0, a.ctx.currentTime + .1); }], // impact, then silence
+  [20.2, a => tone(a, { freq: 3100, gain: .06, attack: .3, hold: 2.5, release: 3 })], // the ringing in your ears
+  [26.4, a => [0, 2.2, 4.4].forEach((at, k) => { tone(a, { type: 'triangle', freq: 523 * (k === 1 ? 1.26 : 1), gain: .22, attack: .01, release: 2.2, at }); tone(a, { freq: 1046, gain: .08, attack: .01, release: 1.6, at }); })], // a distant bell
+];
+const DROPS = Array.from({ length: 140 }, () => [Math.random() * 520, Math.random() * 300, .6 + Math.random() * .8]);
+function drawCine(now) {
+  const c = CINE, t = (now - c.t0) / 1000;
+  c.t = t;
+  if (audio) while (c.cue < CINE_SOUNDS.length && t >= CINE_SOUNDS[c.cue][0]) CINE_SOUNDS[c.cue++][1](audio);
+  const city = IMG['cine_city.png'], close = IMG['cine_closeup.png'], bike = IMG['cine_bike.png'], bus = IMG['cine_bus.png'];
+  const ease = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
+  let slow = 1, flash = 0, white = 0;
+  px(0, 0, W, H, '#05060c');
+  if (t < 19.9) {
+    if (t < 15 || t >= 19) {
+      // the street: the city pans past, the rider holds the middle of the frame
+      const pan = ease((t - .5) / 14) * 150;
+      ctx.globalAlpha = ease(t / 1.4);
+      if (city) ctx.drawImage(city, -pan, -48, 640, 360); else { px(0, 0, W, H, '#1b1f33'); px(0, 200, W, 70, '#0f1222'); }
+      const bx = t < 19 ? -90 + ease(t / 6) * 260 : 170, by = 252;
+      const f = t >= 19 ? 5 : t > 12.3 ? 4 : Math.floor(t * 9) % 4;
+      if (bike) ctx.drawImage(bike, f * 160, 0, 160, 128, Math.round(bx), by - 82 + (f < 4 ? (Math.floor(t * 9) % 2) : 0), 104, 83);
+      // headlights growing from the left
+      const glow = ease((t - 11.6) / 3.2) * (t < 19 ? 1 : 1.4);
+      if (glow > 0) {
+        const g = ctx.createRadialGradient(0, by - 24, 4, 0, by - 24, 60 + 260 * glow);
+        g.addColorStop(0, `rgba(255,252,240,${Math.min(1, 1.2 * glow)})`); g.addColorStop(.35, `rgba(255,240,200,${.6 * glow})`); g.addColorStop(1, 'rgba(255,240,210,0)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      }
+      if (t >= 19 && bus) { // the bus art faces left, so it is mirrored to drive in from the left
+        const k = (t - 19) / .9;
+        ctx.save(); ctx.translate(Math.round(-330 + k * 520) + 330, 0); ctx.scale(-1, 1); ctx.drawImage(bus, 0, by - 118, 330, 100); ctx.restore();
+        flash = ease((t - 19.45) / .2);
+      }
+      ctx.globalAlpha = 1;
+      // lightning
+      for (const lt of [3.2, 9.4]) if (t > lt && t < lt + .5) flash = Math.max(flash, (reduceMotion ? .25 : .6) * (1 - (t - lt) / .5) * (Math.floor((t - lt) * 30) % 3 ? 1 : .4));
+    } else {
+      // the close-up: slow motion, the light swallows everything
+      slow = .08;
+      const k = (t - 15) / 4, z = 1 + k * .12;
+      if (close) ctx.drawImage(close, -W * (z - 1) * .3, -H * (z - 1) * .5, W * z, H * z);
+      white = ease((t - 16.5) / 2.5) * .75;
+    }
+    // rain over everything, slowed during the close-up
+    stroke('#bcd0ff'); ctx.lineWidth = 1; ctx.globalAlpha = t < 15 ? .55 : .8;
+    ctx.beginPath();
+    for (const dp of DROPS) {
+      const y = (dp[1] + t * 420 * dp[2] * slow) % 300 - 15, x = (dp[0] - t * 90 * dp[2] * slow) % 520;
+      const len = slow < 1 ? 2 : 9 * dp[2];
+      ctx.moveTo(x < 0 ? x + 520 : x, y); ctx.lineTo((x < 0 ? x + 520 : x) - len * .3, y + len);
+    }
+    ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  if (t >= 19.6) white = Math.max(white, t < 26 ? 1 : 1 - ease((t - 26) / 4.5) * .55);
+  if (flash) { ctx.globalAlpha = Math.min(1, flash); px(0, 0, W, H, '#ffffff'); ctx.globalAlpha = 1; }
+  if (white) {
+    // the white place, warming toward gold and a faint starfield as the other world comes close
+    ctx.globalAlpha = white; px(0, 0, W, H, '#fbf8f0'); ctx.globalAlpha = 1;
+    if (t > 26) {
+      const k = ease((t - 26) / 4.5), g = ctx.createRadialGradient(W / 2, H * .45, 10, W / 2, H * .45, 300);
+      g.addColorStop(0, `rgba(245,169,58,${.35 * k})`); g.addColorStop(1, `rgba(31,79,163,${.5 * k})`);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      STARS.slice(0, 40).forEach(([x, y, b]) => { ctx.globalAlpha = k * (.4 + .6 * Math.abs(Math.sin(t * (1 + b) + x))); px(x | 0, (y * 1.4) | 0, 1, 1, '#ffffff'); });
+      ctx.globalAlpha = 1;
+    }
+  }
+  if (t > CINE_LEN - 1.2) { ctx.globalAlpha = ease((t - (CINE_LEN - 1.2)) / 1.2); px(0, 0, W, H, '#05060c'); ctx.globalAlpha = 1; }
+  // letterbox bars and subtitles
+  px(0, 0, W, 22, '#000000'); px(0, H - 30, W, 30, '#000000');
+  const line = CINE_LINES.find(([a, b]) => t >= a && t <= b);
+  if (line) {
+    const [a, b, text] = line, al = Math.min(1, (t - a) / .4, (b - t) / .4);
+    ctx.globalAlpha = Math.max(0, al); ctx.font = '11px "Pixelify Sans", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#dfe5df'; ctx.fillText(text, W / 2, H - 15); ctx.globalAlpha = 1;
+  }
+  if (t > 1 && t < CINE_LEN - 1) { ctx.font = '7px "Pixelify Sans", monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillStyle = 'rgba(223,229,223,.45)'; ctx.fillText(matchMedia('(pointer: coarse)').matches ? 'Tap or press A to skip' : 'Z / Enter to skip', W - 8, 11); }
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  if (t >= CINE_LEN && !c.done) c.finish();
+}
+function cinematic() {
+  return new Promise(res => {
+    const a = sfx();
+    const prev = mode;
+    mode = 'cine';
+    CINE = { t0: performance.now(), cue: a ? 0 : CINE_SOUNDS.length, t: 0, done: false };
+    const finish = () => {
+      if (CINE.done) return;
+      CINE.done = true; pop(h); $('stage').removeEventListener('pointerdown', tap);
+      if (audio) { const g = audio.out.gain, n = audio.ctx.currentTime; g.cancelScheduledValues(n); g.setValueAtTime(g.value, n); g.linearRampToValueAtTime(0, n + .4); setTimeout(() => { g.cancelScheduledValues(audio.ctx.currentTime); g.value = .5; if (CINE && CINE.rain) try { CINE.rain.src.stop(); } catch (e) { /* already stopped */ } }, 500); }
+      mode = prev; res();
+    };
+    CINE.finish = finish;
+    const skip = () => { if (CINE.t > .6) finish(); };
+    const h = act => { if (act === 'ok' || act === 'cancel' || act === 'menu') skip(); };
+    const tap = e => { if (audio && audio.ctx.state === 'suspended') audio.ctx.resume(); if (!e.target.closest('#pad')) skip(); };
+    push(h); $('stage').addEventListener('pointerdown', tap);
+  });
+}
+
 // ---------------------------------------------------------------- render
 const STARS = Array.from({ length: 120 }, () => [Math.random() * W, Math.random() * 180, Math.random()]);
 function drawTitle(t) {
@@ -2740,6 +2895,7 @@ function drawCursor(c) {
 function render(t) {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.imageSmoothingEnabled = false;
+  if (mode === 'cine') { drawCine(t * 1000); return; }
   if (mode === 'title' || !MAP) { drawTitle(t); return; }
   px(0, 0, W, H, '#0b0d18');
   const cx = Math.round(cam.x), cy = Math.round(cam.y);
@@ -2825,6 +2981,7 @@ function askName() {
 }
 async function newGame() {
   $('title').hidden = true; // the title menu sits above the name box and would swallow taps on it
+  await cinematic();
   const name = await askName();
   S = newState(name);
   $('fade').classList.add('on');
@@ -2832,8 +2989,9 @@ async function newGame() {
   lock++;
   await sleep(350);
   await say(null, 'Cold stone under your cheek. Somewhere above you, a bell is ringing nine.');
-  await say(null, 'You try to remember how you got here. There is nothing there. No home. No face. No yesterday.');
-  await say(null, `Only a name, ${name}. Even that feels borrowed.`);
+  await say(null, 'You remember rain. Headlights. A city of glass towers and trains in the sky. Then nothing.');
+  await say(null, `You try to remember anything else. Home, faces, yesterday. There is only a name, ${name}. Even that feels borrowed.`);
+  await say(null, 'The air smells of cut grass and candle smoke. This is not Chicago.');
   loadMap('courtyard', 14, 10, 'up');
   await fadeIn();
   toast(MAP.name);
