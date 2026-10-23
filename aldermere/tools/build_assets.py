@@ -321,9 +321,10 @@ def build():
         sheet.paste(ic, ((i % 6) * 48, (i // 6) * 48))
     save(sheet, 'gear48.png')
 
-    # Opening cinematic: the city (wider than the screen, so it can pan), a close-up, the bike rider (6 frames) and the bus
+    # Opening cinematic: the skyline panorama (Willis Tower to Navy Pier, wider than the screen so it can pan),
+    # a close-up, the bike rider (6 frames) and the bus
     city = load('cine_city_gen.png').convert('RGB')
-    save(city.resize((1280, 720), Image.LANCZOS).convert('RGBA'), 'cine_city.png')
+    save(city.resize((1354, round(1354 * city.height / city.width)), Image.LANCZOS).convert('RGBA'), 'cine_city.png')
     save(load('cine_closeup_gen.png').convert('RGB').resize((960, 540), Image.LANCZOS).convert('RGBA'), 'cine_closeup.png')
     bike = cells(key_magenta(load('cine_bike_gen.png')), 3, 2)
     strip = Image.new('RGBA', (160 * 6, 128))

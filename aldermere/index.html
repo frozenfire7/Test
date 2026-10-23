@@ -2625,7 +2625,7 @@ const CINE_LEN = 31;
 const CINE_LINES = [
   [1.0, 4.2, 'Chicago. 11:48 PM.'],
   [4.6, 8.2, 'Last shift ran late again. Twelve blocks to go.'],
-  [8.6, 12.0, 'The rain is so loud you can barely hear the L overhead.'],
+  [8.6, 12.0, 'Navy Pier\'s wheel is still lit. You can barely hear the L over the rain.'],
   [12.4, 14.6, 'Then: light.'],
   [15.2, 19.0, 'Huh. So this is how it ends.'],
   [21.0, 23.4, '...'],
@@ -2686,10 +2686,10 @@ function drawCine(now) {
   px(0, 0, W, H, '#05060c');
   if (t < 19.9) {
     if (t < 15 || t >= 19) {
-      // the street: the city pans past, the rider holds the middle of the frame
-      const pan = ease((t - .5) / 14) * 150;
+      // the street: the skyline pans from the Willis Tower to Navy Pier, the rider holds the middle of the frame
+      const cw = city ? 290 * city.width / city.height : W, pan = ease((t - .5) / 14) * (cw - W);
       ctx.globalAlpha = ease(t / 1.4);
-      if (city) ctx.drawImage(city, -pan, -48, 640, 360); else { px(0, 0, W, H, '#1b1f33'); px(0, 200, W, 70, '#0f1222'); }
+      if (city) ctx.drawImage(city, -pan, -14, cw, 290); else { px(0, 0, W, H, '#1b1f33'); px(0, 200, W, 70, '#0f1222'); }
       const bx = t < 19 ? -90 + ease(t / 6) * 260 : 170, by = 252;
       const f = t >= 19 ? 5 : t > 12.3 ? 4 : Math.floor(t * 9) % 4;
       if (bike) ctx.drawImage(bike, f * 160, 0, 160, 128, Math.round(bx), by - 82 + (f < 4 ? (Math.floor(t * 9) % 2) : 0), 104, 83);
