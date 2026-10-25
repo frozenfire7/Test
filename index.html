@@ -2,68 +2,131 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Blade Mage: Undercroft</title>
 <style>
-  :root{--ink:#140c28;--glow:#7df9ff;--hp:#ff4f7b;--mp:#5ab0ff;--xp:#ffd66b}
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:#0b0618;overflow:hidden;font-family:"Trebuchet MS",system-ui,sans-serif;color:#fff;user-select:none}
+  :root{--ink:#140c28;--glow:#7df9ff;--hp:#ff4f5e;--mp:#4aa8ff;--xp:#ffd66b;--gold:#ffd66b}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#0b0618;overflow:hidden;font-family:"Trebuchet MS",system-ui,sans-serif;color:#fff;user-select:none;touch-action:none}
   canvas{display:block}
   #hud{position:fixed;inset:0;pointer-events:none}
-  .bar{position:absolute;left:20px;width:300px;height:16px;background:#0008;border:2px solid #fff8;border-radius:10px;overflow:hidden;transform:skewX(-12deg)}
+  .bar{position:absolute;left:22px;background:#140c28cc;border:2px solid #fff;border-radius:6px;overflow:hidden;transform:skewX(-14deg);box-shadow:0 2px 0 #0008}
   .bar i{display:block;height:100%;width:100%;transition:width .15s}
-  #hp{top:20px}#hp i{background:linear-gradient(#ff8fae,var(--hp))}
-  #mp{top:44px;height:12px}#mp i{background:linear-gradient(#a6d4ff,var(--mp))}
-  #xp{top:64px;height:6px}#xp i{background:var(--xp)}
-  #lvl{position:absolute;left:24px;top:76px;font-size:13px;text-shadow:0 0 6px #000}
-  #area{position:absolute;top:18px;right:24px;text-align:right;font-size:15px;text-shadow:0 0 8px #000;letter-spacing:1px}
-  #obj{position:absolute;top:42px;right:24px;font-size:13px;color:#ffe9a8;text-shadow:0 0 6px #000}
-  #skills{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:12px}
-  .sk{position:relative;width:64px;height:64px;border:2px solid #fff9;border-radius:14px;background:#140c28cc;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;overflow:hidden}
-  .sk b{font-size:20px}.sk .cd{position:absolute;left:0;bottom:0;width:100%;background:#000a;height:0}
-  .sk.on{border-color:var(--glow);box-shadow:0 0 14px var(--glow)}
-  #prompt{position:absolute;bottom:110px;width:100%;text-align:center;font-size:18px;color:#ffe9a8;text-shadow:0 0 8px #000}
-  #tact{position:absolute;inset:0;box-shadow:inset 0 0 160px 40px #5ab0ff88;opacity:0;transition:opacity .2s;text-align:center;padding-top:90px;font-size:22px;letter-spacing:4px}
-  #flash{position:absolute;inset:0;background:#f23;opacity:0;transition:opacity .25s}
-  .pop{position:absolute;font-weight:900;font-size:20px;text-shadow:-2px 0 #000,2px 0 #000,0 2px #000,0 -2px #000;white-space:nowrap;transform:translate(-50%,-50%)}
-  .eb{position:absolute;width:56px;height:6px;background:#000a;border:1px solid #fff9;transform:translate(-50%,-50%)}
+  .bar span{position:absolute;left:10px;top:50%;transform:translateY(-50%) skewX(14deg);font-size:11px;font-weight:900;letter-spacing:2px;text-shadow:0 1px 2px #000}
+  #hp{top:20px;width:320px;height:22px}#hp i{background:linear-gradient(#ff8a96,var(--hp) 55%,#c3202f)}
+  #mp{top:48px;width:270px;height:16px}#mp i{background:linear-gradient(#9fd2ff,var(--mp) 55%,#1f64c8)}
+  #xp{top:70px;width:220px;height:6px}#xp i{background:var(--xp)}
+  #lvl{position:absolute;left:24px;top:82px;font-size:12px;font-weight:700;text-shadow:0 1px 3px #000}
+  #area{position:absolute;top:18px;right:24px;text-align:right;font-size:15px;font-weight:700;text-shadow:0 2px 4px #000;letter-spacing:1px}
+  #obj{position:absolute;top:42px;right:24px;font-size:13px;color:#ffe9a8;text-shadow:0 1px 4px #000}
+  #boss{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:min(520px,52vw);display:none;text-align:center}
+  #boss b{display:block;font-size:17px;letter-spacing:4px;color:var(--gold);text-shadow:0 2px 4px #000;margin-bottom:4px}
+  #boss .bt{height:16px;border:2px solid #fff;background:#140c28cc;border-radius:3px;overflow:hidden;transform:skewX(-14deg)}
+  #boss i{display:block;height:100%;width:100%;background:linear-gradient(#ff9a5a,#e83a2a 55%,#9a1020);transition:width .2s}
+  #prompt{position:absolute;bottom:128px;width:100%;text-align:center;font-size:19px;font-weight:700;color:#ffe9a8;text-shadow:0 2px 6px #000}
+  #keys{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:10px;font-size:11px;font-weight:700;white-space:nowrap}
+  #keys span{background:#140c28aa;border:1px solid #fff6;border-radius:8px;padding:4px 8px}
+  #keys kbd{background:#fff;color:#140c28;border-radius:4px;padding:1px 5px;margin-right:4px;font:inherit;font-weight:900}
+  #wheel{position:absolute;right:20px;bottom:20px;width:200px;height:200px}
+  #wheel .ring{position:absolute;inset:6px;border-radius:50%;border:3px solid #fff8;background:radial-gradient(#140c28dd 40%,#140c2899);box-shadow:0 0 22px #7df9ff44}
+  .sk{position:absolute;width:62px;height:62px;border:3px solid #fff;border-radius:50%;background:#1d1240;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:700;overflow:hidden;box-shadow:0 3px 0 #0009}
+  .sk b{font-size:18px;line-height:1}
+  .sk .cd{position:absolute;inset:0;background:conic-gradient(#000b calc(var(--p,0)*1%),transparent 0)}
+  .sk.on{border-color:var(--glow);box-shadow:0 0 16px var(--glow)}
+  #sk-s1{left:69px;top:0;background:#6a2a12}#sk-s2{right:0;top:69px;background:#124a6a}#sk-s3{left:69px;bottom:0;background:#16365a}#sk-pot{left:0;top:69px;background:#2a5a2a}
+  #sk-dodge{left:69px;top:69px;width:62px;height:62px;background:#2a1a52;border-color:var(--gold)}
+  #mini{position:absolute;left:20px;bottom:20px;width:160px;height:160px;border-radius:50%;border:4px solid #fff;background:#140c2899;box-shadow:0 0 18px #0008}
+  #mini canvas{border-radius:50%;width:100%;height:100%}
+  #reticle{position:absolute;width:74px;height:74px;margin:-37px 0 0 -37px;display:none;animation:spin 3s linear infinite}
+  #reticle:before,#reticle:after{content:"";position:absolute;inset:0;border:3px solid #ff5a6a;border-radius:50%;border-color:#ff5a6a transparent;filter:drop-shadow(0 0 6px #ff3a4a)}
+  #reticle:after{inset:12px;border-color:transparent #ffd66b}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #tact{position:absolute;inset:0;box-shadow:inset 0 0 160px 40px #5ab0ff88;opacity:0;transition:opacity .2s;text-align:center;padding-top:96px;font-size:22px;letter-spacing:4px;font-weight:900}
+  #flash{position:absolute;inset:0;background:radial-gradient(transparent 40%,#f23);opacity:0;transition:opacity .25s}
+  .pop{position:absolute;font-weight:900;font-size:20px;font-style:italic;-webkit-text-stroke:4px #140c28;paint-order:stroke fill;white-space:nowrap;transform:translate(-50%,-50%);pointer-events:none}
+  .eb{position:absolute;width:56px;height:6px;background:#000a;border:1px solid #fff9;transform:translate(-50%,-50%);pointer-events:none}
   .eb i{display:block;height:100%;background:var(--hp)}
-  .eb.boss{width:520px;height:14px;top:auto!important;left:50%!important;bottom:100px;transform:translateX(-50%)!important;position:fixed}
-  #dlg{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);width:min(780px,92vw);background:#140c28ee;border:2px solid var(--glow);border-radius:16px;padding:18px 22px;display:none;pointer-events:auto;box-shadow:0 0 30px #7df9ff44}
+  #dlg{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);width:min(780px,92vw);background:#140c28ee;border:2px solid var(--glow);border-radius:16px;padding:18px 22px;display:none;pointer-events:auto;box-shadow:0 0 30px #7df9ff44;z-index:4}
   #dlg h4{margin:0 0 6px;color:var(--glow);letter-spacing:2px}
   #dlg p{margin:0 0 12px;line-height:1.5}
   #dlg button{display:block;width:100%;margin:6px 0 0;padding:9px 12px;background:#2a1a52;color:#fff;border:1px solid #7df9ff88;border-radius:10px;cursor:pointer;text-align:left;font:inherit}
   #dlg button:hover{background:#44309a}
-  .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(#2b1658,#0b0618);text-align:center;padding:24px;z-index:5}
-  .screen h1{font-size:clamp(32px,6vw,64px);margin:0;letter-spacing:4px;background:linear-gradient(90deg,#7df9ff,#ff9be3);-webkit-background-clip:text;color:transparent}
+  .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(#2b1658,#0b0618);text-align:center;padding:24px;z-index:6}
+  .screen h1{font-size:clamp(32px,6vw,68px);margin:0;letter-spacing:4px;background:linear-gradient(90deg,#7df9ff,#ff9be3);-webkit-background-clip:text;color:transparent}
   .screen p{max-width:640px;line-height:1.6;color:#d8ccff}
-  .screen button{margin-top:14px;padding:12px 36px;font-size:20px;border:2px solid var(--glow);background:#140c28;color:#fff;border-radius:14px;cursor:pointer}
+  .screen button{margin:10px 6px 0;padding:12px 36px;font-size:20px;border:3px solid var(--glow);background:#140c28;color:#fff;border-radius:14px;cursor:pointer;font-weight:700}
   .screen button:hover{background:#2f1d66}
-  .keys{font-size:13px;color:#a99be0;max-width:640px}
-  #end{display:none}
+  .keys{font-size:13px;color:#a99be0;max-width:680px}
+  #title button{animation:pulse 1.4s infinite}
+  @keyframes pulse{50%{box-shadow:0 0 28px var(--glow)}}
+  #end,#over{display:none}
+  #over{background:radial-gradient(#4a1020cc,#0b0618f0)}
+  #over h1{background:linear-gradient(90deg,#ff7a8a,#ffd66b);-webkit-background-clip:text}
+  #card{position:fixed;inset:0;z-index:5;display:none;align-items:center;justify-content:center;flex-direction:column;background:#0b0618f2;text-align:center;opacity:0}
+  #card.show{display:flex;animation:cardin 2.6s ease both}
+  @keyframes cardin{0%{opacity:0}18%{opacity:1}78%{opacity:1}100%{opacity:0}}
+  #card small{letter-spacing:10px;color:var(--gold);font-size:16px}
+  #card h2{margin:6px 0;font-size:clamp(30px,6vw,64px);letter-spacing:3px}
+  #card p{color:#cbbdf5}
+  #touch{display:none;position:fixed;inset:0;z-index:3;pointer-events:none}
+  .touch #touch{display:block}
+  #stick{position:absolute;left:30px;bottom:200px;width:130px;height:130px;border-radius:50%;background:#ffffff22;border:2px solid #fff6;pointer-events:auto}
+  #nub{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:50%;background:#ffffffaa}
+  .tb{position:absolute;pointer-events:auto;width:58px;height:58px;border-radius:50%;background:#140c28cc;border:2px solid #fff;font-weight:900;display:flex;align-items:center;justify-content:center}
+  .touch #keys{display:none}
+  .touch #wheel{right:90px;bottom:180px;transform:scale(.7);transform-origin:bottom right}
+  @media (max-width:700px){#mini{width:110px;height:110px}#hp{width:200px}#mp{width:170px}}
 </style>
 </head>
 <body>
 <div id="hud">
-  <div class="bar" id="hp"><i></i></div><div class="bar" id="mp"><i></i></div><div class="bar" id="xp"><i></i></div>
+  <div class="bar" id="hp"><i></i><span>HEALTH</span></div><div class="bar" id="mp"><i></i><span>MANA</span></div><div class="bar" id="xp"><i></i></div>
   <div id="lvl"></div><div id="area"></div><div id="obj"></div>
-  <div id="skills"></div>
+  <div id="boss"><b></b><div class="bt"><i></i></div></div>
+  <div id="reticle"></div>
+  <div id="mini"><canvas width="160" height="160"></canvas></div>
+  <div id="wheel"><div class="ring"></div>
+    <div class="sk" id="sk-s1"><b>1</b>Flame<div class="cd"></div></div>
+    <div class="sk" id="sk-s2"><b>2</b>Frost<div class="cd"></div></div>
+    <div class="sk" id="sk-s3"><b>3</b>Arc<div class="cd"></div></div>
+    <div class="sk" id="sk-pot"><b>F</b><span id="potn"></span><div class="cd"></div></div>
+    <div class="sk" id="sk-dodge"><b>␣</b>Dodge<div class="cd"></div></div>
+  </div>
   <div id="prompt"></div>
-  <div id="tact">TACTICAL MODE — TIME SLOWED — press Tab to resume</div>
+  <div id="keys"><span><kbd>LMB</kbd>Attack</span><span><kbd>RMB</kbd>Heavy</span><span><kbd>T</kbd>Lock-on</span><span><kbd>Tab</kbd>Tactical</span><span><kbd>R</kbd>Interact</span></div>
+  <div id="tact">TACTICAL MODE — press Tab to resume</div>
   <div id="flash"></div>
 </div>
+<div id="touch">
+  <div id="stick"><div id="nub"></div></div>
+  <div class="tb" id="t-atk" style="right:20px;bottom:20px">ATK</div>
+  <div class="tb" id="t-hvy" style="right:88px;bottom:20px">HVY</div>
+  <div class="tb" id="t-dge" style="right:20px;bottom:88px">DGE</div>
+  <div class="tb" id="t-int" style="right:88px;bottom:88px">USE</div>
+  <div class="tb" id="t-lck" style="right:156px;bottom:20px">LCK</div>
+  <div class="tb" id="t-pot" style="right:156px;bottom:88px">POT</div>
+  <div class="tb" id="t-1" style="right:20px;bottom:156px">1</div>
+  <div class="tb" id="t-2" style="right:88px;bottom:156px">2</div>
+  <div class="tb" id="t-3" style="right:156px;bottom:156px">3</div>
+  <div class="tb" id="t-cl" style="left:30px;bottom:350px;width:48px;height:48px">◀</div>
+  <div class="tb" id="t-cr" style="left:100px;bottom:350px;width:48px;height:48px">▶</div>
+</div>
 <div id="dlg"></div>
+<div id="card"><small></small><h2></h2><p></p></div>
 <div class="screen" id="title">
   <h1>BLADE MAGE</h1>
   <h3 style="letter-spacing:6px;margin:6px 0 18px;color:#ffd66b">UNDERCROFT OF AETHERHOLT ACADEMY</h3>
-  <p>Summoned from another world into a school of magic, you carry no wand — only a sword that drinks mana.
-  Beneath the academy, the summoning circle that brought you here is still burning. Descend, and learn why.</p>
-  <p class="keys"><b>WASD</b> move · <b>Q/E</b> turn camera · <b>LMB / J</b> light combo · <b>RMB / K</b> heavy · <b>Space</b> dodge<br>
-  <b>1</b> Flame Edge · <b>2</b> Frost Nova · <b>3</b> Arc Bolt · <b>F</b> potion · <b>R</b> interact · <b>Tab</b> tactical slow-mo (queue spells like a party RPG)</p>
-  <button id="start">Enter the Academy</button>
+  <p>Summoned from another world into a school of magic floating in the sky, you carry no wand — only a greatsword that drinks mana.
+  Beneath the academy, the circle that brought you here is still burning. Descend, and learn why.</p>
+  <p class="keys"><b>WASD</b> move · <b>Q/E</b> camera · <b>LMB/J</b> light combo · <b>RMB/K</b> heavy · <b>Space</b> dodge · <b>T</b> lock-on<br>
+  <b>1</b> Flame Edge · <b>2</b> Frost Nova · <b>3</b> Arc Bolt · <b>F</b> potion · <b>R</b> interact · <b>Tab</b> tactical slow-mo</p>
+  <button id="start">Press Start</button>
 </div>
+<div class="screen" id="over"><h1>DEFEATED</h1><p>The Undercroft claims another student...</p>
+  <div><button id="retry">Retry</button><button id="home">Return to Academy</button></div></div>
 <div class="screen" id="end"><h1>THE CIRCLE GOES QUIET</h1>
-  <p>The Hollow Archdean falls. But the summoning rune flickers once more, and below it something else stirs...<br><i>(To be continued)</i></p>
+  <p>The Ancient Guardian Golem crumbles. The summoning rune flickers once more, and below it something else stirs...<br><i>(To be continued)</i></p>
+  <p id="stats"></p>
   <button id="again">Return to the Academy</button></div>
 <script type="module" src="/src/main.js"></script>
 </body>
