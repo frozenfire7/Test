@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blade Mage: Undercroft</title>
+<style>
+  :root{--ink:#140c28;--glow:#7df9ff;--hp:#ff4f7b;--mp:#5ab0ff;--xp:#ffd66b}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0b0618;overflow:hidden;font-family:"Trebuchet MS",system-ui,sans-serif;color:#fff;user-select:none}
+  canvas{display:block}
+  #hud{position:fixed;inset:0;pointer-events:none}
+  .bar{position:absolute;left:20px;width:300px;height:16px;background:#0008;border:2px solid #fff8;border-radius:10px;overflow:hidden;transform:skewX(-12deg)}
+  .bar i{display:block;height:100%;width:100%;transition:width .15s}
+  #hp{top:20px}#hp i{background:linear-gradient(#ff8fae,var(--hp))}
+  #mp{top:44px;height:12px}#mp i{background:linear-gradient(#a6d4ff,var(--mp))}
+  #xp{top:64px;height:6px}#xp i{background:var(--xp)}
+  #lvl{position:absolute;left:24px;top:76px;font-size:13px;text-shadow:0 0 6px #000}
+  #area{position:absolute;top:18px;right:24px;text-align:right;font-size:15px;text-shadow:0 0 8px #000;letter-spacing:1px}
+  #obj{position:absolute;top:42px;right:24px;font-size:13px;color:#ffe9a8;text-shadow:0 0 6px #000}
+  #skills{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:12px}
+  .sk{position:relative;width:64px;height:64px;border:2px solid #fff9;border-radius:14px;background:#140c28cc;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;overflow:hidden}
+  .sk b{font-size:20px}.sk .cd{position:absolute;left:0;bottom:0;width:100%;background:#000a;height:0}
+  .sk.on{border-color:var(--glow);box-shadow:0 0 14px var(--glow)}
+  #prompt{position:absolute;bottom:110px;width:100%;text-align:center;font-size:18px;color:#ffe9a8;text-shadow:0 0 8px #000}
+  #tact{position:absolute;inset:0;box-shadow:inset 0 0 160px 40px #5ab0ff88;opacity:0;transition:opacity .2s;text-align:center;padding-top:90px;font-size:22px;letter-spacing:4px}
+  #flash{position:absolute;inset:0;background:#f23;opacity:0;transition:opacity .25s}
+  .pop{position:absolute;font-weight:900;font-size:20px;text-shadow:-2px 0 #000,2px 0 #000,0 2px #000,0 -2px #000;white-space:nowrap;transform:translate(-50%,-50%)}
+  .eb{position:absolute;width:56px;height:6px;background:#000a;border:1px solid #fff9;transform:translate(-50%,-50%)}
+  .eb i{display:block;height:100%;background:var(--hp)}
+  .eb.boss{width:520px;height:14px;top:auto!important;left:50%!important;bottom:100px;transform:translateX(-50%)!important;position:fixed}
+  #dlg{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);width:min(780px,92vw);background:#140c28ee;border:2px solid var(--glow);border-radius:16px;padding:18px 22px;display:none;pointer-events:auto;box-shadow:0 0 30px #7df9ff44}
+  #dlg h4{margin:0 0 6px;color:var(--glow);letter-spacing:2px}
+  #dlg p{margin:0 0 12px;line-height:1.5}
+  #dlg button{display:block;width:100%;margin:6px 0 0;padding:9px 12px;background:#2a1a52;color:#fff;border:1px solid #7df9ff88;border-radius:10px;cursor:pointer;text-align:left;font:inherit}
+  #dlg button:hover{background:#44309a}
+  .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(#2b1658,#0b0618);text-align:center;padding:24px;z-index:5}
+  .screen h1{font-size:clamp(32px,6vw,64px);margin:0;letter-spacing:4px;background:linear-gradient(90deg,#7df9ff,#ff9be3);-webkit-background-clip:text;color:transparent}
+  .screen p{max-width:640px;line-height:1.6;color:#d8ccff}
+  .screen button{margin-top:14px;padding:12px 36px;font-size:20px;border:2px solid var(--glow);background:#140c28;color:#fff;border-radius:14px;cursor:pointer}
+  .screen button:hover{background:#2f1d66}
+  .keys{font-size:13px;color:#a99be0;max-width:640px}
+  #end{display:none}
+</style>
+</head>
+<body>
+<div id="hud">
+  <div class="bar" id="hp"><i></i></div><div class="bar" id="mp"><i></i></div><div class="bar" id="xp"><i></i></div>
+  <div id="lvl"></div><div id="area"></div><div id="obj"></div>
+  <div id="skills"></div>
+  <div id="prompt"></div>
+  <div id="tact">TACTICAL MODE — TIME SLOWED — press Tab to resume</div>
+  <div id="flash"></div>
+</div>
+<div id="dlg"></div>
+<div class="screen" id="title">
+  <h1>BLADE MAGE</h1>
+  <h3 style="letter-spacing:6px;margin:6px 0 18px;color:#ffd66b">UNDERCROFT OF AETHERHOLT ACADEMY</h3>
+  <p>Summoned from another world into a school of magic, you carry no wand — only a sword that drinks mana.
+  Beneath the academy, the summoning circle that brought you here is still burning. Descend, and learn why.</p>
+  <p class="keys"><b>WASD</b> move · <b>Q/E</b> turn camera · <b>LMB / J</b> light combo · <b>RMB / K</b> heavy · <b>Space</b> dodge<br>
+  <b>1</b> Flame Edge · <b>2</b> Frost Nova · <b>3</b> Arc Bolt · <b>F</b> potion · <b>R</b> interact · <b>Tab</b> tactical slow-mo (queue spells like a party RPG)</p>
+  <button id="start">Enter the Academy</button>
+</div>
+<div class="screen" id="end"><h1>THE CIRCLE GOES QUIET</h1>
+  <p>The Hollow Archdean falls. But the summoning rune flickers once more, and below it something else stirs...<br><i>(To be continued)</i></p>
+  <button id="again">Return to the Academy</button></div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
